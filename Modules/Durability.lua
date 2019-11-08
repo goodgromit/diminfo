@@ -96,7 +96,6 @@ if not C.Durability then return end
 					local slotIcon = "|T"..GetInventoryItemTexture("player", localSlots[i][1])..":16:16:0:0:50:50:4:46:4:46|t " or ""
 					GameTooltip:AddDoubleLine(localSlots[i][2], slotIcon..GetInventoryItemLink("player", localSlots[i][1]).." "..floor(localSlots[i][3]/localSlots[i][4]*100).."%", 1, 1, 1, red+1, green,0)
 				elseif (localSlots[i][4] == 0 and localSlots[i][3] ~= 0) then
-					print("localSlots[i][4] == 0 and localSlots[i][3] ~= 0")
 					local slotIcon = "|T"..GetInventoryItemTexture("player", localSlots[i][1])..":16:16:0:0:50:50:4:46:4:46|t " or ""
 					GameTooltip:AddDoubleLine(localSlots[i][2], slotIcon..GetInventoryItemLink("player", localSlots[i][1]).." "..localSlots[i][3], 1,1,1, 1,1,1)
 				else
