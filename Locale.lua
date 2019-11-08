@@ -57,7 +57,7 @@ elseif GetLocale() == "zhCN" then
 elseif GetLocale() == "koKR" then
 	infoL = {
 		["AutoSell junk"] = "회색아이템 자동판매：",
-		["Trash sold, earned "] = "회색아이템 판매：",
+		["Trash sold, earned "] = "회색아이템 판매소득：",
 
 		["AutoRepair"] = "자동수리：",
 		["Repair cost"] = "수리비용：",
@@ -68,16 +68,16 @@ elseif GetLocale() == "koKR" then
 		["Sorting"] = "정렬",
 		["Sorting by:"] = "정렬방식：",
 
-		["Shift"] = "Shift확장",
-		["Hidden"] = HIDE,
+		["Shift"] = "(Shift키)모두보기",
+		["Hidden"] = "숨겨짐",
 
 		["Default UI Memory Usage:"] = "기본 UI 메모리 사용：",
 		["Total Memory Usage:"] = "전체 메모리 사용：",
 		["Garbage collected"] = "여유 메모리 확보：",
-		["AutoCollect"] = "자동수집：",
+		["AutoCollect"] = "자동 메모리 확보：",
 
 		["Home"] = "지역",
-		["Latency"] = "지연：",
+		["Latency"] = "지연 시간：",
 		["CPU Usage"] = "CPU 사용률：",
 		["Reload UI(on)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：애드온을 다시 로드하면 CPU사용량이 표시됩니다.",
 		["Reload UI(off)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：애드온을 다시 로드하면 CPU사용량이 숨겨집니다.",
