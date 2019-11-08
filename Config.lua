@@ -56,12 +56,10 @@ local MediaFolder = "Interface\\AddOns\\diminfo\\Media\\"
 	-- Memory / 記憶體占用列表
 	C.Memory = true
 	C.MaxAddOns = 30
-	--C.MemoryPoint = {"TOP", UIParent, -290, -6}
 	C.MemoryPoint = {"LEFT", "panel1", "LEFT", 20, 0}
 
 	-- System: Fps and latency / 幀數與延遲
 	C.System = true
-	--C.SystemPoint = {"TOP", UIParent, -200, -6}
 	C.SystemPoint = {"LEFT", "panel1", "LEFT", 120, 0}
 
 	-- 好友
@@ -74,12 +72,10 @@ local MediaFolder = "Interface\\AddOns\\diminfo\\Media\\"
 
 	-- Timer / 時鐘
 	--C.Time = true
-	--C.TimePoint = {"TOP", Minimap, "BOTTOM", 0, 8}
-	--C.TimePoint =  {"RIGHT", "diminfo_pos", "LEFT", 0, 0}
+	--C.TimePoint = {"LEFT", "panel1", "LEFT" 0, 8}
 
 	-- Money / 時鐘
 	C.Money = true
-	--C.MoneyPoint = {"LEFT", "diminfo_pos", "RIGHT", 50, 0}
 	C.MoneyPoint = {"LEFT", "panel1","LEFT", 490, 0}
 
 	-- Durability / 耐久

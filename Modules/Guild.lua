@@ -1,4 +1,4 @@
-local addon, ns = ... 
+local addon, ns = ...
 local C, F, G = unpack(ns)
 local panel = CreateFrame("Frame", nil, UIParent)
 
@@ -31,6 +31,14 @@ if not C.Guild then return end
 	Text:SetPoint(unpack(C.GuildPoint))
 	Stat:SetAllPoints(Text)
 
+	local sort_array = {
+		[1] = {1, NAME},
+		[2] = {10, RANK},
+		[3] = {3, LEVEL},
+		[4] = {4, ZONE},
+		[5] = {9, CLASS}
+	}
+
 	-- sort by/排序
 	local function SortGuildTable(shift)
 		sort(guildTable, function(a, b)
@@ -50,13 +58,13 @@ if not C.Guild then return end
 		local count = 0
 		for i = 1, GetNumGuildMembers() do
 			name, rank, rankIndex, level, _, zone, note, officernote, connected, status, class = GetGuildRosterInfo(i)
-			
-			-- we are only interested in online members/只顯示線上成員	
+
+			-- we are only interested in online members/只顯示線上成員
 			if status == 1 then
 				status = "|T"..FRIENDS_TEXTURE_AFK..":16:16:-8:-1:32:32|t"
 			elseif status == 2 then
 				status = "|T"..FRIENDS_TEXTURE_DND..":16:16:-8:-1:32:32|t"
-			else 
+			else
 				status = " "
 			end
 			-- colored member in group/染色隊友
@@ -67,29 +75,28 @@ if not C.Guild then return end
 			else
 				flag = ""
 			end
-			
-			if connected then 
+
+			if connected then
 				count = count + 1
 				guildTable[count] = { name, rank, level, zone, note, officernote, connected, status, class, rankIndex, flag }
 			end
 		end
 		SortGuildTable(IsShiftKeyDown())
-	end	
-	
+	end
+
 	-- guild daily massage/公會每日訊息
 	local function UpdateGuildMessage()
 		guildMotD = GetGuildRosterMOTD()
 	end
 
+
 	local function Update(self, event, ...)
-		if (C.Sortingby == nil) then
-			C.Sortingby = 9
+		if (diminfo.Sort == nil) then
+			diminfo.Sort = 5
 		end
-		
-		if (diminfo.Sortingbystring == nil) then
-			diminfo.Sortingbystring = CLASS
-		end
-		
+
+		C.Sortingby = sort_array[diminfo.Sort][1]
+
 		if IsInGuild() then
 			-- special handler to request guild roster updates when guild members come online or go
 			-- offline, since this does not automatically trigger the GuildRoster update from the server
@@ -99,12 +106,12 @@ if not C.Guild then return end
 					GuildRoster()
 				end
 			end
-			
+
 			if event == "GUILD_MOTD" then
 				UpdateGuildMessage()
 				return
 			end
-			
+
 			-- when we enter the world and guildframe is not available then
 			-- load guild frame, update guild message
 			if event == "PLAYER_ENTERING_WORLD" then
@@ -113,7 +120,7 @@ if not C.Guild then return end
 					UpdateGuildMessage()
 				end
 			end
-			
+
 			-- an event occured that could change the guild roster, so request update,
 			-- and wait for guild roster update to occur
 			if event ~= "GUILD_ROSTER_UPDATE" and event~="PLAYER_GUILD_UPDATE" then
@@ -127,7 +134,7 @@ if not C.Guild then return end
 			Text:SetText(C.ClassColor and F.Hex(G.Ccolors)..infoL["No Guild"] or infoL["No Guild"])
 		end
 	end
-	
+
 	-- right-click menu/右鍵選單
 	local menuFrame = CreateFrame("Frame", "GuildRightClickMenu", UIParent, "UIDropDownMenuTemplate")
 	local menuList = {
@@ -166,9 +173,9 @@ if not C.Guild then return end
 	local function sortingClick(self,arg1,arg2,checked)
 		menuFrame:Hide()
 		C.Sortingby = arg1
-		diminfo.Sortingbystring = arg2
+		diminfo.Sort = arg2
 	end
-	
+
 	local function ToggleGuildFrame()
 		if IsInGuild() then
 			if not GuildFrame then
@@ -178,12 +185,12 @@ if not C.Guild then return end
 			securecall(ToggleFriendsFrame, 3)
 		end
 	end
-	
+
 	-- click function
 	Stat:SetScript("OnMouseUp", function(self, btn)
 		GameTooltip:Hide()
 		if btn ~= "RightButton" or not IsInGuild() then return end
-		if InCombatLockdown() then return end		
+		if InCombatLockdown() then return end
 
 		local classc, levelc, grouped, info
 		local menuCountWhispers = 0
@@ -210,10 +217,8 @@ if not C.Guild then return end
 			end
 		end
 
-		sortbyt = {NAME, RANK, LEVEL, ZONE, CLASS}
-		sortbyw = {1, 10, 3, 4, 9}
-		for i = 1, #sortbyt do
-			menuList[4].menuList[i] = {text = sortbyt[i], arg1 = sortbyw[i],arg2 = sortbyt[i], notCheckable=true, func = sortingClick}
+		for i = 1, 5 do
+			menuList[4].menuList[i] = {text = sort_array[i][2], arg1 = sort_array[i][1], arg2 = i, notCheckable=true, func = sortingClick}
 		end
 		--EasyMenu(menuList, menuFrame, "cursor", 0, 0, "MENU", 2)
 		EasyMenu(menuList, menuFrame, "cursor", 0, -5, "MENU", 2)
@@ -223,23 +228,23 @@ if not C.Guild then return end
 		if btn ~= "LeftButton" then return end
 		ToggleGuildFrame()
 	end)
-	
+
 	-- tooltip setup: guild member list
 	Stat:SetScript("OnEnter", function(self)
 		if not IsInGuild() then return end
-		
+
 		local total, online = GetNumGuildMembers()
 		GuildRoster()
 		BuildGuildTable()
-		
+
 		local guildName, guildRank = GetGuildInfo("player")
 
-		GameTooltip:SetOwner(self, "ANCHOR_BOTTOM", 0, -10)		
+		GameTooltip:SetOwner(self, "ANCHOR_BOTTOM", 0, -10)
 		GameTooltip:ClearLines()
 		GameTooltip:AddDoubleLine(format(guildName), format(format("%d/%d", online, total)),0,.6,1,0,.6,1)
 		GameTooltip:AddDoubleLine(RANK, guildRank)
 		--GameTooltip:AddLine(guildRank, unpack(tthead))
-		
+
 		--  guild daily massage/公會每日訊息
 		local guildMotD = GetGuildRosterMOTD()
 		if guildMotD ~= "" then
@@ -248,10 +253,10 @@ if not C.Guild then return end
 			GameTooltip:AddLine(format(guildMotD), ttsubh.r, ttsubh.g, ttsubh.b, 2)
 		end
 		GameTooltip:AddLine(" ")
-		
+
 		local zonec, classc, levelc, info
 		local shown = 0
-		
+
 		for i = 1, #guildTable do
 			-- if more then 30 guild members are online, we don"t Show any more, but inform user there are more
 			if 40 - shown <= 1 then
@@ -268,7 +273,7 @@ if not C.Guild then return end
 				zonec = inactivezone
 			end
 			classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[9]], GetQuestDifficultyColor(info[3])
-			
+
 			if IsShiftKeyDown() then
 				GameTooltip:AddDoubleLine(format(nameRankString, info[1], info[2]), info[4], classc.r, classc.g, classc.b, zonec.r, zonec.g, zonec.b)
 				if info[5] ~= "" then
@@ -283,7 +288,7 @@ if not C.Guild then return end
 			shown = shown + 1
 		end
 		GameTooltip:AddDoubleLine(" ","--------------", 1, 1, 1, .5, .5, .5)
-		GameTooltip:AddDoubleLine(" ",infoL["Sorting by:"].."|cff55ff55"..diminfo.Sortingbystring, 1, 1, 1, .6, .8, 1)
+		GameTooltip:AddDoubleLine(" ",infoL["Sorting by:"].."|cff55ff55"..sort_array[diminfo.Sort][2], 1, 1, 1, .6, .8, 1)
 		GameTooltip:Show()
 	end)
 

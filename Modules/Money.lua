@@ -22,4 +22,5 @@ if not C.Money then return end
 
 	Stat:RegisterEvent("VARIABLES_LOADED")
 	Stat:RegisterEvent("PLAYER_MONEY")
+	Stat:RegisterEvent("PLAYER_ENTERING_WORLD")
 	Stat:SetScript("OnEvent", OnEvent)
