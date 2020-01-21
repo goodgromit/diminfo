@@ -1,10 +1,10 @@
-## Interface: 11302
-## Author: Loshine, EK
+## Interface: 11303
+## Author: Loshine, EK, gromit
 ## Title: |cff777777dim|rinfo_Classic
 ## Notes: Info Data Bar
 ## Version: C1.3
 ## SavedVariables: diminfo
-## X-Credits: Tukz, Katae, Loshine, DDestruction, msylgj0, Siweia
+## X-Credits: Tukz, Katae, Loshine, DDestruction, msylgj0, Siweia, gromit
 
 Config.lua
 API.lua

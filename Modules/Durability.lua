@@ -52,8 +52,8 @@ if not C.Durability then return end
 				if current then
 					localSlots[i][3] = current
 					localSlots[i][4] = max
-					dura_current = dura_current + current
-					dura_max = dura_max + max
+					dura_current = dura_current + (current/max*100)
+					dura_max = dura_max + 100
 				else
 					localSlots[i][3] = GetItemCount(GetInventoryItemID("player", localSlots[i][1]));
 					localSlots[i][4] = 0;
