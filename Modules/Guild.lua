@@ -250,7 +250,7 @@ if not C.Guild then return end
 		if guildMotD ~= "" then
 			GameTooltip:AddLine(" ")
 			GameTooltip:AddLine(GUILD_MOTD, unpack(tthead))
-			GameTooltip:AddLine(format(guildMotD), ttsubh.r, ttsubh.g, ttsubh.b, 2)
+			GameTooltip:AddLine(guildMotD, ttsubh.r, ttsubh.g, ttsubh.b, 2)
 		end
 		GameTooltip:AddLine(" ")
 
