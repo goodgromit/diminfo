@@ -56,9 +56,9 @@ if not C.System then return end
 		Cput = {}
 		UpdateAddOnCPUUsage()
 		Total = 0
-		for i = 1, GetNumAddOns() do
+		for i = 1, C_AddOns.GetNumAddOns() do
 			Cpuu = GetAddOnCPUUsage(i)
-			Cput[i] = { select(2, GetAddOnInfo(i)), Cpuu, IsAddOnLoaded(i) }
+			Cput[i] = { select(2, C_AddOns.GetAddOnInfo(i)), Cpuu, C_AddOns.IsAddOnLoaded(i) }
 			Total = Total + Cpuu
 		end
 

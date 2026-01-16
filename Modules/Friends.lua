@@ -101,9 +101,9 @@ if not C.Friends then return end
 			checked = function() return checkStatus()[1] end,
 			func = function()
 				if IsChatAFK() then
-					SendChatMessage("", "AFK")
+					C_ChatInfo.SendChatMessage("", "AFK")
 				elseif IsChatDND() then
-					SendChatMessage("", "DND")
+					C_ChatInfo.SendChatMessage("", "DND")
 				end
 			end
 		},
@@ -112,7 +112,7 @@ if not C.Friends then return end
 			checked = function() return checkStatus()[2] end,
 			func = function()
 				if not IsChatDND() then
-					SendChatMessage("", "DND")
+					C_ChatInfo.SendChatMessage("", "DND")
 				end
 			end
 		},
@@ -121,7 +121,7 @@ if not C.Friends then return end
 			checked = function() return checkStatus()[3] end,
 			func = function()
 				if not IsChatAFK() then
-					SendChatMessage("", "AFK")
+					C_ChatInfo.SendChatMessage("", "AFK")
 				end
 			end
 		},
@@ -314,8 +314,21 @@ if not C.Friends then return end
 			end
 		end
 
-		--EasyMenu(menuList, menuFrame, "cursor", 0, 0, "MENU", 2)
-		EasyMenu(menuList, menuFrame, "cursor", 0, -5, "MENU", 3)
+		--EasyMenu(menuList, menuFrame, "cursor", 0, -5, "MENU", 3)
+		MenuUtil.CreateContextMenu(UIParent, function(owner, rootDescription)
+			for _, info in ipairs(menuList) do
+				if info.text then
+					if info.isTitle then
+						rootDescription:CreateTitle(info.text)
+					elseif info.hasArrow then
+						local submenu = rootDescription:CreateButton(info.text, info.func)
+					else
+						rootDescription:CreateButton(info.text, info.func)
+					end
+				end
+			end
+		end)
+
 	end)
 	
 	-- tooltip setup: friend list/好友列表

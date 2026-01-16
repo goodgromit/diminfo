@@ -43,24 +43,25 @@ if not C.Memory then return end
 		UpdateAddOnMemoryUsage()
 		Total = 0
 
-		for i = 1, GetNumAddOns() do
+		for i = 1, C_AddOns.GetNumAddOns() do
 			Mem = GetAddOnMemoryUsage(i)
-			Memory[i] = { select(2, GetAddOnInfo(i)), Mem, IsAddOnLoaded(i) }
+			Memory[i] = { select(2, C_AddOns.GetAddOnInfo(i)), Mem, C_AddOns.IsAddOnLoaded(i) }
 			Total = Total + Mem
 		end
 
-		MEMORY_TEXT = formatMem(Total, true)
+		MEMORY_TEXT = formatMem(Total)
 		table.sort(Memory, function(a, b)
 			if a and b then
 				return a[2] > b[2]
 			end
+			return false
 		end)
 	end
 
 	local function RefreshText()
 		UpdateAddOnMemoryUsage()
 		tTotal = 0
-		for i = 1, GetNumAddOns() do
+		for i = 1, C_AddOns.GetNumAddOns() do
 			local tMem = GetAddOnMemoryUsage(i)
 			tTotal = tTotal + tMem
 		end
@@ -127,7 +128,7 @@ if not C.Memory then return end
 				or Memory[i][2] <= 2560 and {1,0.75} -- 1mb - 2.5mb
 				or Memory[i][2] <= 5120 and {1,0.5} -- 2.5mb - 5mb
 				or {1,0.1} -- 5mb +
-				GameTooltip:AddDoubleLine(Memory[i][1], formatMem(Memory[i][2], false), 1, 1, 1, color[1], color[2], 0)
+				GameTooltip:AddDoubleLine(Memory[i][1], formatMem(Memory[i][2]), 1, 1, 1, color[1], color[2], 0)
 			end
 		end
 

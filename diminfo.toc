@@ -1,4 +1,4 @@
-## Interface: 11303
+## Interface: 20505
 ## Author: Loshine, EK, gromit
 ## Title: |cff777777dim|rinfo_Classic
 ## Notes: Info Data Bar

@@ -24,7 +24,7 @@ if not C.Bags then return end
 		-- text
 		local free, total, used = 0, 0, 0
 		for i = 0, NUM_BAG_SLOTS do
-			free, total = free + GetContainerNumFreeSlots(i), total + GetContainerNumSlots(i)
+			free, total = free + C_Container.GetContainerNumFreeSlots(i), total + C_Container.GetContainerNumSlots(i)
 		end
 		used = total - free
 		Text:SetText(C.ClassColor and F.Hex(G.Ccolors)..BAGSLOT.." |r"..free.."/"..total or BACKPACK_TOOLTIP.." "..free.."/"..total)
@@ -61,25 +61,43 @@ if not C.Bags then return end
 
 	-- Auto sell gray
 	local SellGray = CreateFrame("Frame")
+	SellGray:RegisterEvent("MERCHANT_SHOW")
+
 	SellGray:SetScript("OnEvent", function()
-		if diminfo.AutoSell == true then
-			local c = 0
-			for b = 0, 4 do
-				for s = 1, GetContainerNumSlots(b) do
-					local l = GetContainerItemLink(b, s)
-					if l and (select(11, GetItemInfo(l)) ~= nil) and (select(2, GetContainerItemInfo(b, s)) ~= nil) then
-						local p = select(11, GetItemInfo(l)) * select(2, GetContainerItemInfo(b, s))
-						if select(3, GetItemInfo(l)) == 0 and p > 0 then
-							UseContainerItem(b, s)
-							PickupMerchantItem()
-							c = c + p
+		-- 자동 판매 옵션이 켜져 있는지 확인
+		if not diminfo.AutoSell then return end
+
+		local totalEarnings = 0
+		-- 가방 번호는 보통 0~4(기본+가방4개)이며, 최신 버전은 재료 가방(5)까지 포함 가능
+		for bag = 0, 5 do
+			for slot = 1, C_Container.GetContainerNumSlots(bag) do
+				-- 최신 API는 정보를 테이블 형태로 반환함
+				local containerInfo = C_Container.GetContainerItemInfo(bag, slot)
+				
+				if containerInfo then
+					local itemLink = containerInfo.hyperlink
+					local stackCount = containerInfo.stackCount
+					
+					-- 아이템 링크가 있고 정보가 유효한지 확인
+					if itemLink then
+						local itemName, _, itemQuality, _, _, _, _, _, _, _, itemSellPrice = C_Item.GetItemInfo(itemLink)
+						
+						-- 품질이 0(잡동사니/회색)이고 판매 가격이 있는 경우
+						if itemQuality == 0 and itemSellPrice and itemSellPrice > 0 then
+							local currentPrice = itemSellPrice * stackCount
+							
+							-- 아이템 판매 실행 (최신 API 권장)
+							C_Container.UseContainerItem(bag, slot)
+							totalEarnings = totalEarnings + currentPrice
 						end
 					end
 				end
 			end
-			if c > 0 then
-				print(format("|cff99CCFF"..infoL["Trash sold, earned "].."|r%s", GetMoneyString(c)))
-			end
+		end
+
+		-- 판매 금액이 있다면 출력
+		if totalEarnings > 0 then
+			local goldString = GetMoneyString(totalEarnings)
+			print(format("|cff99CCFF%s|r %s", infoL["Trash sold, earned "] or "잡동사니 판매 완료: ", goldString))
 		end
 	end)
-	SellGray:RegisterEvent("MERCHANT_SHOW")

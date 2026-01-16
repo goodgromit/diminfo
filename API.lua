@@ -18,10 +18,10 @@ end
 
 -- 創建框架
 F.CreatePanel = function(name, anchor, parent, x, y, w, h, size)
-	local panel = CreateFrame("Frame", nil, parent)
+	local panel = CreateFrame("Frame", name, parent, "BackdropTemplate")
 	local framelvl = parent:GetFrameLevel()
 
-  panel:SetWidth(w)
+    panel:SetWidth(w)
 	panel:SetHeight(h)
 	panel:ClearAllPoints()
 	panel:SetPoint(anchor, parent, x, y)
@@ -34,7 +34,7 @@ F.CreatePanel = function(name, anchor, parent, x, y, w, h, size)
 	panel:SetBackdropColor( .1, .1, .1, .6)
 	panel:SetBackdropBorderColor( .1, .1, .1, .6)
 
-	sd = CreateFrame("Frame", name, panel)
+	sd = CreateFrame("Frame", name, panel, "BackdropTemplate")
 	sd:SetPoint("TOPLEFT", -size, size)
 	sd:SetPoint("BOTTOMRIGHT", size, -size)
 	sd:SetFrameStrata(panel:GetFrameStrata())
