@@ -184,10 +184,11 @@ if not C.Friends then return end
 	local function BuildBNTable(total)
 		wipe(BNTable)
 		for i = 1, total do
-			local bnetIDAccount, accountName, battleTag, isBattleTagPresence, charName, bnetIDGameAccount, client, isOnline, _, isAFK, isDND = BNGetFriendInfo(i)
-			if isOnline then
-				local _, _, _, realmName, _, faction, _, class, _, zoneName, level, gameText, _, _, _, _, _, isGameAFK, isGameBusy  = BNGetGameAccountInfo(bnetIDGameAccount)
-				charName = BNet_GetValidatedCharacterName(charName, battleTag, client)
+			local accountInfo = C_BattleNet.GetFriendAccountInfo(i)
+			local game = accountInfo.gameAccountInfo
+			
+			if game.isOnline then
+				local _, _, _, realmName, _, faction, _, class, _, zoneName, level, gameText, _, _, _, _, _, isGameAFK, isGameBusy  = BNGetGameAccountInfo(game.gameAccountID)
 				for k, v in pairs(LOCALIZED_CLASS_NAMES_MALE) do
 					if class == v then
 						class = k
@@ -195,15 +196,15 @@ if not C.Friends then return end
 				end
 				
 				local status, account, infoText
-				if isAFK or isGameAFK then
+				if accountInfo.isAFK or isGameAFK then
 					status = " |T"..FRIENDS_TEXTURE_AFK..":0:0:-2:-2:50:50:4:46:4:46|t"
-				elseif isDND or isGameBusy then
+				elseif accountInfo.isDND or isGameBusy then
 					status = " |T"..FRIENDS_TEXTURE_DND..":0:0:-2:-2:50:50:4:46:4:46|t"
 				else
 					status = ""
 				end
 				
-				if client == BNET_CLIENT_WOW then
+				if game.clientProgram == BNET_CLIENT_WOW then
 					if ( not zoneName or zoneName == "" ) then
 						infoText = UNKNOWN
 					else
@@ -213,11 +214,17 @@ if not C.Friends then return end
 					infoText = gameText
 				end
 				
-				BNTable[i] = { bnetIDAccount, accountName, battleTag, isBattleTagPresence, charName, bnetIDGameAccount, client, isOnline, isAFK, isDND, status, realmName, faction, class, zoneName, level, infoText }
+				table.insert(BNTable, { accountInfo.bnetAccountID, accountInfo.accountName, accountInfo.battleTag, accountInfo.isBattleTagFriend, game.characterName, game.gameAccountID, game.clientProgram, game.isOnline, accountInfo.isAFK, accountInfo.isDND, status, realmName, faction, class, zoneName, level, infoText, i })
 			end
 		end
-		-- sort by name/按名字排序
+
+
+		for i = 1, #BNTable do
+			print(BNTable[i][4], BNTable[i][5])
+		end		
+		-- sort by name
 		sort(BNTable, function(a, b)
+			print(a[2],b[2])
 			if a[2] and b[2] then
 				return a[2] < b[2]
 			end
@@ -425,10 +432,10 @@ if not C.Friends then return end
 						end
 					else
 						local clienticon = "|T"..GetClientTexture(info[7])..":16:16:2:0:50:50:4:46:4:46|t " or ""
-						if info[4] then
+						if info[5] ~= nil then
 							GameTooltip:AddDoubleLine(format(clienticon..info[5]..info[11]), info[3], 1, 1, 1, 1, 1, 1)
 						else
-							GameTooltip:AddDoubleLine(format(clienticon..info[5]..info[11]), info[2], 1, 1, 1, 1, 1, 1)
+							GameTooltip:AddDoubleLine(format(clienticon..info[11]), info[2], 1, 1, 1, 1, 1, 1)
 						end
 					end
 				end
