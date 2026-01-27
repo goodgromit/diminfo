@@ -84,6 +84,7 @@ if not C.Durability then return end
 			GameTooltip:SetPoint("BOTTOM", self, "TOP", 0, 1)
 			GameTooltip:ClearLines()
 
+			-- C_SpecializationInfo.GetSpecializationInfo, https://warcraft.wiki.gg/wiki/API_C_SpecializationInfo.GetSpecializationInfo
 			local p1 = select(3, GetTalentTabInfo(1))
 			local p2 = select(3, GetTalentTabInfo(2))
 			local p3 = select(3, GetTalentTabInfo(3))

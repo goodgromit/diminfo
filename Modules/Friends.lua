@@ -214,17 +214,15 @@ if not C.Friends then return end
 					infoText = gameText
 				end
 				
-				table.insert(BNTable, { accountInfo.bnetAccountID, accountInfo.accountName, accountInfo.battleTag, accountInfo.isBattleTagFriend, game.characterName, game.gameAccountID, game.clientProgram, game.isOnline, accountInfo.isAFK, accountInfo.isDND, status, realmName, faction, class, zoneName, level, infoText, i })
+				table.insert(BNTable, { accountInfo.bnetAccountID, accountInfo.accountName, accountInfo.battleTag, accountInfo.isBattleTagFriend, game.characterName,
+					game.gameAccountID, game.clientProgram, game.isOnline, accountInfo.isAFK, accountInfo.isDND,
+					status, realmName, faction, class, zoneName,
+					level, infoText, i })
 			end
 		end
 
-
-		for i = 1, #BNTable do
-			print(BNTable[i][4], BNTable[i][5])
-		end		
 		-- sort by name
 		sort(BNTable, function(a, b)
-			print(a[2],b[2])
 			if a[2] and b[2] then
 				return a[2] < b[2]
 			end
@@ -305,7 +303,7 @@ if not C.Friends then return end
 				if info[8] then
 					menuCountWhispers = menuCountWhispers + 1
 					menuList[3].menuList[menuCountWhispers] = {text = "|cff70C0F5"..info[2], arg1 = info[2], arg2 = info[1], notCheckable = true, func = BNwhisperClick}
-					-- 在wow且同陣營時可邀請組隊
+
 					if info[7] == BNET_CLIENT_WOW and info[13] == select(1, UnitFactionGroup("player")) then
 						menuCountInvites = menuCountInvites + 1
 						local classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[14]], GetQuestDifficultyColor(info[16])
@@ -338,18 +336,15 @@ if not C.Friends then return end
 
 	end)
 	
-	-- tooltip setup: friend list/好友列表
+	-- tooltip setup: friend list
 	Stat:SetScript("OnEnter", function(self)
-
 		local numberOfFriends = C_FriendList.GetNumFriends()
 		local onlineFriends = C_FriendList.GetNumOnlineFriends()
 		local totalBNet, numBNetOnline = BNGetNumFriends()
 		local totalonline = onlineFriends + numBNetOnline
-		local currentBroadcast = select(4, BNGetInfo(1))
+		local currentBroadcast = select(4, BNGetInfo())
 		
-		-- 無人在線上
 		if totalonline == 0 then return end
-		-- 只檢索在線上者
 		if not dataValid then
 			if numberOfFriends > 0 then
 				BuildFriendTable(numberOfFriends)
@@ -394,12 +389,12 @@ if not C.Friends then return end
 						classc = levelc
 					end
 					
-					GameTooltip:AddDoubleLine((F.Hex(levelc)..info[2].."|r "..F.Hex(classc)..info[1].." |r"..info[5]), info[4], classc.r, classc.g, classc.b, zonec.r, zonec.g, zonec.b)
+					GameTooltip:AddDoubleLine((F.Hex(levelc)..info[2].."|r "..F.Hex(classc)..info[1].."|r "..info[5]), info[4], classc.r, classc.g, classc.b, zonec.r, zonec.g, zonec.b)
 				end
 			end
 		end
 
-		-- battle.net friends/戰網好友
+		-- battle.net friends
 		if numBNetOnline > 0 then
 			GameTooltip:AddLine(" ")
 			GameTooltip:AddLine(battleNetString)
@@ -407,19 +402,30 @@ if not C.Friends then return end
 			local status = 0
 			for i = 1, #BNTable do
 				info = BNTable[i]
+
+				-- 0: accountInfo.bnetAccountID, 1: accountInfo.accountName, 3: accountInfo.battleTag, 4: accountInfo.isBattleTagFriend,5 : game.characterName,
+				-- 6: game.gameAccountID, 7: game.clientProgram, 8: game.isOnline,  9: accountInfo.isAFK, 10: accountInfo.isDND,
+				-- 11: status, 12: realmName, 13: faction, 14: class, 15: zoneName,
+				-- 16: level, 17: infoText(정보, 앱사용중 멀고어 등) 18: i })
+				-- print(info[1], info[2], info[3], info[4], info[5])
+				-- print(info[6], info[7], info[8], info[9], info[10])
+				-- print(info[11], info[12], info[13], info[14], info[15])
+				-- print(info[16],info[17], info[18])
+
 				if info[8] then
 					if info[7] == BNET_CLIENT_WOW then
 						local classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[14]], GetQuestDifficultyColor(info[16])
 						if classc == nil then
 							classc = levelc
 						end
-						--if UnitInParty(info[5]) or UnitInRaid(info[5]) then grouped = " +" else grouped = "" end
-						local clienticon = "|T"..GetClientTexture(info[7])..":16:16:2:0:50:50:4:46:4:46|t " or ""
-						
-						if info[4] then	-- 有tag
-							GameTooltip:AddDoubleLine(format(clienticon..F.Hex(levelc)..info[16].."|r "..info[5]..info[11]),info[3], classc.r, classc.g, classc.b, 1, 1, 1)
-						else	-- 只有實名
-							GameTooltip:AddDoubleLine(format(clienticon..F.Hex(levelc)..info[16].."|r "..info[5]..info[11]),info[2], classc.r, classc.g, classc.b, 1, 1, 1)
+						-- if UnitInParty(info[5]) or UnitInRaid(info[5]) then grouped = " +" else grouped = "" end
+						local clienticon = "|T"..(GetClientTexture(info[7])..":16:16:2:0:50:50:4:46:4:46|t " or "")
+						local infoText = (info[17] == nil) and "" or ("- " .. info[17])
+
+						if info[4] then	-- tag exist
+							GameTooltip:AddDoubleLine(format(clienticon..F.Hex(levelc)..info[16].."|r "..info[5].."|cffffffff "..infoText), info[2], classc.r, classc.g, classc.b, 1, 1, 1)
+						else	-- no tags
+							GameTooltip:AddDoubleLine(format(clienticon..F.Hex(levelc)..info[16].."|r "..info[5].."|cffffffff "..infoText), info[2], classc.r, classc.g, classc.b, 1, 1, 1)
 						end
 						if IsShiftKeyDown() then
 							--if GetRealZoneText() == info[16] then zonec = activezone else zonec = inactivezone end
@@ -431,9 +437,9 @@ if not C.Friends then return end
 							GameTooltip:AddDoubleLine(format(F.Hex(levelc)..info[16].."|r "..info[5]), info[12], classc.r, classc.g, classc.b, realmc.r, realmc.g, realmc.b)
 						end
 					else
-						local clienticon = "|T"..GetClientTexture(info[7])..":16:16:2:0:50:50:4:46:4:46|t " or ""
+						local clienticon = "|T"..(GetClientTexture(info[7])..":16:16:2:0:50:50:4:46:4:46|t " or "")
 						if info[5] ~= nil then
-							GameTooltip:AddDoubleLine(format(clienticon..info[5]..info[11]), info[3], 1, 1, 1, 1, 1, 1)
+							GameTooltip:AddDoubleLine(format(clienticon..info[5]..info[11].." - "..info[15]), info[3], 1, 1, 1, 1, 1, 1)
 						else
 							GameTooltip:AddDoubleLine(format(clienticon..info[11]), info[2], 1, 1, 1, 1, 1, 1)
 						end

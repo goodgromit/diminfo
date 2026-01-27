@@ -3,6 +3,7 @@ local C, F, G, T = unpack(ns)
 local panel = CreateFrame("Frame", nil, UIParent)
 
 if not C.System then return end
+	local startTime = GetTime()
 
 	-- make addon frame anchor-able
 	local Stat = CreateFrame("Frame", "diminfo_System")
@@ -44,28 +45,42 @@ if not C.System then return end
 		if int < 0 then
 			local _, _, latencyHome, latencyWorld = GetNetStats()
 			local lat = max(latencyHome, latencyWorld)
-			local fps = floor(GetFramerate())
+ 			local fps = floor(GetFramerate()+0.5)
 
-			Text:SetText(colorFPS(fps).."|rfps "..colorLatency(lat).."|rms")
+			Text:SetText(colorFPS(fps).."|rfps "..colorLatency(latencyHome).."|rms")
 			int = 0.8
 		end
 	end
 	
-	local Total, Cpuu, Cput
+	local Cpuu
+	local Cput = {} -- 처음에 한 번만 생성
+
 	local function RefreshCput(self)
-		Cput = {}
 		UpdateAddOnCPUUsage()
-		Total = 0
+		
+		-- 1. 기존 데이터 업데이트 또는 삽입
 		for i = 1, C_AddOns.GetNumAddOns() do
-			Cpuu = GetAddOnCPUUsage(i)
-			Cput[i] = { select(2, C_AddOns.GetAddOnInfo(i)), Cpuu, C_AddOns.IsAddOnLoaded(i) }
-			Total = Total + Cpuu
+			local name = select(2, C_AddOns.GetAddOnInfo(i))
+			local usage = GetAddOnCPUUsage(i)
+			local isLoaded = C_AddOns.IsAddOnLoaded(i)
+
+			if not Cput[i] then
+				-- 테이블 항목이 없으면 새로 생성 (최초 1회만 실행됨)
+				Cput[i] = { name, usage, isLoaded }
+			else
+				-- 기존 테이블의 값만 교체 (테이블 재사용)
+				Cput[i][1] = name
+				Cput[i][2] = usage
+				Cput[i][3] = isLoaded
+			end
 		end
 
+		-- 2. 정렬 (기존 테이블 안의 요소들 순서만 변경됨)
 		table.sort(Cput, function(a, b)
 			if a and b then
 				return a[2] > b[2]
 			end
+			return false
 		end)
 	end
 
@@ -78,6 +93,8 @@ if not C.System then return end
 		GameTooltip:ClearLines()
 		GameTooltip:AddLine(CHAT_MSG_SYSTEM, 0, .6, 1)
 		GameTooltip:AddLine(" ")
+		
+		local maxAddOns = 0
 		if IsShiftKeyDown() then
 			maxAddOns = #Cput
 		else
@@ -85,17 +102,20 @@ if not C.System then return end
 		end
 
 	if GetCVar("scriptProfile") == "1" then
+		local total = (GetTime() - startTime)*100
+		GameTooltip:AddLine(infoL["AddOn CPU Usage"], 1, 1, 1)
 		for i = 1, maxAddOns do
 			if Cput[i][3] then
-				local color = Cput[i][2]/Total*100 <= 1 and {0,1}	-- 0 - 1
-				or Cput[i][2]/Total*100 <= 5 and {0.75,1}			-- 1 - 5
-				or Cput[i][2]/Total*100 <= 10 and {1,1}				-- 5 - 10
-				or Cput[i][2]/Total*100 <= 25 and {1,0.75}			-- 10 - 25
-				or Cput[i][2]/Total*100 <= 50 and {1,0.5}			-- 25 - 50
+				local color = Cput[i][2]/total <= 1 and {0,1}	-- 0 - 1
+				or Cput[i][2]/total <= 5 and {0.75,1}			-- 1 - 5
+				or Cput[i][2]/total <= 10 and {1,1}				-- 5 - 10
+				or Cput[i][2]/total <= 25 and {1,0.75}			-- 10 - 25
+				or Cput[i][2]/total <= 50 and {1,0.5}			-- 25 - 50
 				or {1,0.1}											-- 50 +
-				GameTooltip:AddDoubleLine(Cput[i][1], format("%.2f%s", Cput[i][2]/Total*100, " %"), 1, 1, 1, color[1], color[2], 0)						
+				GameTooltip:AddDoubleLine(Cput[i][1], format("%.2f %s", Cput[i][2]/total*100, " %"), 1, 1, 1, color[1], color[2], 0)						
 			end
 		end
+
 		local more, moreCpuu = 0, 0
 		if not IsShiftKeyDown() then
 			for i = (C.MaxAddOns + 1), #Cput do
@@ -104,7 +124,7 @@ if not C.System then return end
 					moreCpuu = moreCpuu + Cput[i][2]
 				end
 			end
-			GameTooltip:AddDoubleLine(format("%d %s (%s)", more, infoL["Hidden"], infoL["Shift"]), format("%.2f%s", moreCpuu/Total*100, " %"), .6, .8, 1, .6, .8, 1)
+			GameTooltip:AddDoubleLine(format("%d %s (%s)", more, infoL["Hidden"], infoL["Shift"]), format("%.2f%s", moreCpuu/total*100, " %"), .6, .8, 1, .6, .8, 1)
 		end
 		GameTooltip:AddLine(" ")
 	end
