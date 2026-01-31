@@ -39,6 +39,10 @@ if not C.Guild then return end
 		[5] = {9, CLASS}
 	}
 
+	function RequestGuildRoster()
+    	C_GuildInfo.GuildRoster()
+	end
+
 	-- sort by/排序
 	local function SortGuildTable(shift)
 		sort(guildTable, function(a, b)
@@ -103,7 +107,7 @@ if not C.Guild then return end
 			if event == "CHAT_MSG_SYSTEM" then
 				local message = select(1, ...)
 				if string.find(message, friendOnline) or string.find(message, friendOffline) then
-					GuildRoster()
+					RequestGuildRoster()
 				end
 			end
 
@@ -112,19 +116,26 @@ if not C.Guild then return end
 				return
 			end
 
-			-- when we enter the world and guildframe is not available then
-			-- load guild frame, update guild message
+			-- 캐릭터가 세계에 접속했을 때
 			if event == "PLAYER_ENTERING_WORLD" then
-				if not GuildFrame and IsInGuild() then
-					LoadAddOn("Blizzard_GuildUI")
-					UpdateGuildMessage()
+				if IsInGuild() then
+					-- 1. 최신 API를 사용하여 커뮤니티(길드) UI 로드 여부 확인 및 로드
+					if not C_AddOns.IsAddOnLoaded("Blizzard_Communities") then
+						C_AddOns.LoadAddOn("Blizzard_Communities")
+					end
+					
+					-- 2. 길드 메시지 업데이트 함수 호출
+					-- (UpdateGuildMessage가 사용자 정의 함수라면 그대로 유지)
+					if type(UpdateGuildMessage) == "function" then
+						UpdateGuildMessage()
+					end
 				end
 			end
 
 			-- an event occured that could change the guild roster, so request update,
 			-- and wait for guild roster update to occur
 			if event ~= "GUILD_ROSTER_UPDATE" and event~="PLAYER_GUILD_UPDATE" then
-				GuildRoster()
+				RequestGuildRoster()
 				return
 			end
 
@@ -135,54 +146,30 @@ if not C.Guild then return end
 		end
 	end
 
-	-- right-click menu/右鍵選單
-	local menuFrame = CreateFrame("Frame", "GuildRightClickMenu", UIParent, "UIDropDownMenuTemplate")
-	local menuList = {
-		{	-- 標題
-			text = OPTIONS_MENU,
-			isTitle = true,
-			notCheckable = true
-		},
-		{	-- 邀請
-			text = INVITE,
-			hasArrow = true,
-			notCheckable = true
-		},
-		{	-- 密語
-			text = CHAT_MSG_WHISPER_INFORM,
-			hasArrow = true,
-			notCheckable = true
-		},
-		{	-- 排序
-			text = infoL["Sorting"],
-			hasArrow = true,
-			notCheckable = true
-		},
-	}
-
-	local function inviteClick(self, arg1, arg2, checked)
-		menuFrame:Hide()
-		InviteUnit(arg1)
-	end
-
 	local function whisperClick(self,arg1,arg2,checked)
-		menuFrame:Hide()
 		SetItemRef( "player:"..arg1, ("|Hplayer:%1$s|h[%1$s]|h"):format(arg1), "LeftButton" )
 	end
 
 	local function sortingClick(self,arg1,arg2,checked)
-		menuFrame:Hide()
 		C.Sortingby = arg1
 		diminfo.Sort = arg2
 	end
 
 	local function ToggleGuildFrame()
 		if IsInGuild() then
-			if not GuildFrame then
-				LoadAddOn("Blizzard_GuildUI")
+			-- 1. 최신 API를 사용하여 길드/커뮤니티 애드온 로드
+			if not C_AddOns.IsAddOnLoaded("Blizzard_Communities") then
+				C_AddOns.LoadAddOn("Blizzard_Communities")
 			end
-			--GuildFrame_Toggle()
-			securecall(ToggleFriendsFrame, 3)
+			
+			-- 2. 길드 창 토글 (과거 ToggleFriendsFrame, 3 방식의 최신 대응)
+			-- 보통 J키를 눌렀을 때 나오는 '길드 및 커뮤니티' 창을 엽니다.
+			if CommunitiesFrame then
+				ToggleCommunitiesFrame()
+			else
+				-- 클래식이나 구형 UI 구조를 유지하는 경우를 위한 백업
+				securecall(ToggleFriendsFrame, 3)
+			end
 		end
 	end
 
@@ -192,36 +179,55 @@ if not C.Guild then return end
 		if btn ~= "RightButton" or not IsInGuild() then return end
 		if InCombatLockdown() then return end
 
-		local classc, levelc, grouped, info
-		local menuCountWhispers = 0
-		local menuCountInvites = 0
+		-- 메뉴 생성 시작
+		MenuUtil.CreateContextMenu(self, function(owner, rootDescription)
+			-- 1. 타이틀
+			rootDescription:CreateTitle(OPTIONS_MENU)
 
-		menuList[2].menuList = {}
-		menuList[3].menuList = {}
-		menuList[4].menuList = {}
+			-- 서브메뉴 헤더 생성
+			local inviteMenu = rootDescription:CreateButton(INVITE)
+			local whisperMenu = rootDescription:CreateButton(CHAT_MSG_WHISPER_INFORM)
+			local sortMenu = rootDescription:CreateButton(infoL["Sorting"])
 
-		for i = 1, #guildTable do
-			info = guildTable[i]
-			if info[7] and info[1] ~= GetUnitName("player") then
-				local classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[9]], GetQuestDifficultyColor(tonumber(info[3]))
+			-- 길드원 데이터 처리 루프
+			for i = 1, #guildTable do
+				local info = guildTable[i]
+				-- 온라인 상태(info[7]) 및 본인 제외
+				if info[7] and info[1] ~= GetUnitName("player") then
+					local classc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[9]]
+					local levelc = GetQuestDifficultyColor(tonumber(info[3]))
+					
+					-- 이름 텍스트 생성
+					local nameText = format(levelNameString, levelc.r*255, levelc.g*255, levelc.b*255, info[3], classc.r*255, classc.g*255, classc.b*255, info[1], "")
 
-				if UnitInParty(info[1]) or UnitInRaid(info[1]) then
-					grouped = "|cffaaaaaa*|r"
-				else
-					menuCountInvites = menuCountInvites +1
-					grouped = ""
-					menuList[2].menuList[menuCountInvites] = {text = format(levelNameString, levelc.r*255,levelc.g*255,levelc.b*255, info[3], classc.r*255,classc.g*255,classc.b*255, info[1], ""), arg1 = info[1],notCheckable = true, func = inviteClick}
+					-- [귓속말 메뉴]
+					local grouped = (UnitInParty(info[1]) or UnitInRaid(info[1])) and "|cffaaaaaa*|r" or ""
+					whisperMenu:CreateButton(nameText .. grouped, function()
+						whisperClick(nil, info[1])
+					end)
+
+					-- [초대 메뉴] (파티 중이 아닐 때만)
+					if not (UnitInParty(info[1]) or UnitInRaid(info[1])) then
+						-- 보안 속성 주입을 위해 AddInitializer 사용
+						inviteMenu:CreateButton(nameText, function() end):AddInitializer(function(button)
+							button:SetAttribute("type", "invite")
+							button:SetAttribute("inviteunit", info[1])
+						end)
+					end
 				end
-				menuCountWhispers = menuCountWhispers + 1
-				menuList[3].menuList[menuCountWhispers] = {text = format(levelNameString, levelc.r*255,levelc.g*255,levelc.b*255, info[3], classc.r*255,classc.g*255,classc.b*255, info[1], grouped), arg1 = info[1],notCheckable = true, func = whisperClick}
 			end
-		end
 
-		for i = 1, 5 do
-			menuList[4].menuList[i] = {text = sort_array[i][2], arg1 = sort_array[i][1], arg2 = i, notCheckable=true, func = sortingClick}
-		end
-		--EasyMenu(menuList, menuFrame, "cursor", 0, 0, "MENU", 2)
-		EasyMenu(menuList, menuFrame, "cursor", 0, -5, "MENU", 2)
+			-- [정렬 메뉴]
+			for i = 1, 5 do
+				sortMenu:CreateButton(sort_array[i][2], function()
+					sortingClick(nil, sort_array[i][1], i)
+				end)
+			end
+
+			rootDescription:CreateButton(GUILD_AND_COMMUNITIES, function()
+				ToggleGuildFrame()
+			end)
+		end)
 	end)
 
 	Stat:SetScript("OnMouseDown", function(self, btn)
@@ -234,7 +240,7 @@ if not C.Guild then return end
 		if not IsInGuild() then return end
 
 		local total, online = GetNumGuildMembers()
-		GuildRoster()
+		RequestGuildRoster()
 		BuildGuildTable()
 
 		local guildName, guildRank = GetGuildInfo("player")
