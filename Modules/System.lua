@@ -3,151 +3,162 @@ local C, F, G, T = unpack(ns)
 local panel = CreateFrame("Frame", nil, UIParent)
 
 if not C.System then return end
-	local startTime = GetTime()
 
-	-- make addon frame anchor-able
-	local Stat = CreateFrame("Frame", "diminfo_System")
-	Stat:EnableMouse(true)
-	Stat:SetFrameStrata("BACKGROUND")
-	Stat:SetFrameLevel(3)
+local lastUpdate = GetTime()
+local lastUsage = {} 
+local currentCPU = {} 
 
-	-- setup text
-	local Text  = panel:CreateFontString(nil, "OVERLAY")
-	Text:SetFont(G.Fonts, G.FontSize, G.FontFlag)
-	Text:SetPoint(unpack(C.SystemPoint))
-	Stat:SetAllPoints(Text)
+-- 현재 엔진 활성 상태 (UI 리로드 전까지 변하지 않음)
+local isCPUEngineActive = GetCVar("scriptProfile") == "1"
 
-	-- latency color
-	local function colorLatency(latency)
-		if latency < 300 then
-			return "|cff0CD809"..latency
-		elseif (latency >= 300 and latency < 500) then
-			return "|cffE8DA0F"..latency
-		else
-			return "|cffD80909"..latency
-		end
-	end
-	
-	local function colorFPS(fps)
-		if fps < 15 then
-			return "|cffD80909"..fps
-		elseif fps < 30 then
-			return "|cffE8DA0F"..fps
-		else
-			return "|cff0CD809"..fps
-		end
-	end
+-- 리로드 확인 팝업 설정
+StaticPopupDialogs["RELOAD_UI_CONFIRM"] = {
+    text = "|cff55ff55diminfo:|r CPU 측정 설정을 변경하려면 UI 리로드가 필요합니다. 지금 하시겠습니까?",
+    button1 = ACCEPT,
+    button2 = CANCEL,
+    OnAccept = function() 
+        -- [수정] 사용자가 수락했을 때만 CVar를 토글하고 리로드 실행
+        local targetValue = (GetCVar("scriptProfile") == "1") and "0" or "1"
+        SetCVar("scriptProfile", targetValue)
+        ReloadUI() 
+    end,
+    -- [수정] Cancel 시에는 아무 작업도 하지 않음 (처리 자체를 취소)
+    OnCancel = function() end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
 
-	local int = 1
-	local function onUpdate(self, t)
-		int = int - t
+local Stat = CreateFrame("Frame", "diminfo_System")
+Stat:EnableMouse(true)
+Stat:SetFrameStrata("BACKGROUND")
+Stat:SetFrameLevel(3)
 
-		if int < 0 then
-			local _, _, latencyHome, latencyWorld = GetNetStats()
-			local lat = max(latencyHome, latencyWorld)
- 			local fps = floor(GetFramerate()+0.5)
+local Text  = panel:CreateFontString(nil, "OVERLAY")
+Text:SetFont(G.Fonts, G.FontSize, G.FontFlag)
+Text:SetPoint(unpack(C.SystemPoint))
+Stat:SetAllPoints(Text)
 
-			Text:SetText(colorFPS(fps).."|rfps "..colorLatency(latencyHome).."|rms")
-			int = 0.8
-		end
-	end
-	
-	local Cpuu
-	local Cput = {} -- 처음에 한 번만 생성
+local function colorLatency(latency)
+    if latency < 300 then return "|cff0CD809"..latency
+    elseif latency < 500 then return "|cffE8DA0F"..latency
+    else return "|cffD80909"..latency end
+end
 
-	local function RefreshCput(self)
-		UpdateAddOnCPUUsage()
-		
-		-- 1. 기존 데이터 업데이트 또는 삽입
-		for i = 1, C_AddOns.GetNumAddOns() do
-			local name = select(2, C_AddOns.GetAddOnInfo(i))
-			local usage = GetAddOnCPUUsage(i)
-			local isLoaded = C_AddOns.IsAddOnLoaded(i)
+local function colorFPS(fps)
+    if fps < 15 then return "|cffD80909"..fps
+    elseif fps < 30 then return "|cffE8DA0F"..fps
+    else return "|cff0CD809"..fps end
+end
 
-			if not Cput[i] then
-				-- 테이블 항목이 없으면 새로 생성 (최초 1회만 실행됨)
-				Cput[i] = { name, usage, isLoaded }
-			else
-				-- 기존 테이블의 값만 교체 (테이블 재사용)
-				Cput[i][1] = name
-				Cput[i][2] = usage
-				Cput[i][3] = isLoaded
-			end
-		end
+local function RefreshCput()
+    if not isCPUEngineActive then 
+        wipe(currentCPU)
+        return 
+    end
+    
+    UpdateAddOnCPUUsage()
+    local now = GetTime()
+    local elapsed = now - lastUpdate
+    if elapsed <= 0 then elapsed = 0.01 end
 
-		-- 2. 정렬 (기존 테이블 안의 요소들 순서만 변경됨)
-		table.sort(Cput, function(a, b)
-			if a and b then
-				return a[2] > b[2]
-			end
-			return false
-		end)
-	end
+    wipe(currentCPU) 
 
-	-- tooltip
-	Stat:SetScript("OnEnter", function(self)
-		RefreshCput(self)
-		GameTooltip:SetOwner(self, "ANCHOR_BOTTOM", 0, -10)
-		GameTooltip:ClearAllPoints()
-		GameTooltip:SetPoint("BOTTOM", self, "TOP", 0, 1)
-		GameTooltip:ClearLines()
-		GameTooltip:AddLine(CHAT_MSG_SYSTEM, 0, .6, 1)
-		GameTooltip:AddLine(" ")
-		
-		local maxAddOns = 0
-		if IsShiftKeyDown() then
-			maxAddOns = #Cput
-		else
-			maxAddOns = math.min(C.MaxAddOns, #Cput)
-		end
+    local numAddons = C_AddOns.GetNumAddOns()
+    for i = 1, numAddons do
+        local name = select(2, C_AddOns.GetAddOnInfo(i))
+        local usage = GetAddOnCPUUsage(i)
+        local isLoaded = C_AddOns.IsAddOnLoaded(i)
 
-	if GetCVar("scriptProfile") == "1" then
-		local total = (GetTime() - startTime)*100
-		GameTooltip:AddLine(infoL["AddOn CPU Usage"], 1, 1, 1)
-		for i = 1, maxAddOns do
-			if Cput[i][3] then
-				local color = Cput[i][2]/total <= 1 and {0,1}	-- 0 - 1
-				or Cput[i][2]/total <= 5 and {0.75,1}			-- 1 - 5
-				or Cput[i][2]/total <= 10 and {1,1}				-- 5 - 10
-				or Cput[i][2]/total <= 25 and {1,0.75}			-- 10 - 25
-				or Cput[i][2]/total <= 50 and {1,0.5}			-- 25 - 50
-				or {1,0.1}											-- 50 +
-				GameTooltip:AddDoubleLine(Cput[i][1], format("%.2f %s", Cput[i][2]/total*100, " %"), 1, 1, 1, color[1], color[2], 0)						
-			end
-		end
+        if isLoaded then
+            local diff = usage - (lastUsage[i] or usage)
+            local percent = diff / (elapsed * 1000) * 100
+            table.insert(currentCPU, { name, percent, isLoaded, i })
+            lastUsage[i] = usage
+        end
+    end
+    lastUpdate = now
 
-		local more, moreCpuu = 0, 0
-		if not IsShiftKeyDown() then
-			for i = (C.MaxAddOns + 1), #Cput do
-				if Cput[i][3] then
-					more = more + 1
-					moreCpuu = moreCpuu + Cput[i][2]
-				end
-			end
-			GameTooltip:AddDoubleLine(format("%d %s (%s)", more, infoL["Hidden"], infoL["Shift"]), format("%.2f%s", moreCpuu/total*100, " %"), .6, .8, 1, .6, .8, 1)
-		end
-		GameTooltip:AddLine(" ")
-	end
-		local _, _, latencyHome, latencyWorld = GetNetStats()
-		GameTooltip:AddDoubleLine(infoL["Latency"], format("%s%s(%s)/%s%s(%s)", colorLatency(latencyHome).."|r", "ms", infoL["Home"], colorLatency(latencyWorld).."|r", "ms", CHANNEL_CATEGORY_WORLD), .6, .8, 1, 1, 1, 1)
-		GameTooltip:AddDoubleLine(" ", "--------------", 1, 1, 1, .5, .5, .5)
-		GameTooltip:AddDoubleLine(" ", infoL["CPU Usage"]..(GetCVar("scriptProfile") == "1" and "|cff55ff55"..ENABLE or "|cffff5555"..DISABLE), 1, 1, 1, .6, .8, 1)
-		GameTooltip:Show()
-	end)
-	
-	Stat:SetScript("OnLeave", function() GameTooltip:Hide() end)
-	Stat:SetScript("OnMouseDown", function(self,btn)
-		if btn == "RightButton" then
-			if GetCVar("scriptProfile") == "0" then
-				SetCVar("scriptProfile", 1)
-				print(infoL["Reload UI(on)"])
-			else
-				SetCVar("scriptProfile", 0)
-				print(infoL["Reload UI(off)"])
-			end
-		end
-		ResetCPUUsage()
-		RefreshCput(self)
-		self:GetScript("OnEnter")(self)
-	end)
-	Stat:SetScript("OnUpdate", onUpdate) 
+    table.sort(currentCPU, function(a, b)
+        if a and b and a[2] and b[2] then
+            return a[2] > b[2]
+        end
+        return false
+    end)
+end
+
+local int = 1
+local function onUpdate(self, t)
+    int = int - t
+    if int < 0 then
+        local _, _, latencyHome, latencyWorld = GetNetStats()
+        local fps = floor(GetFramerate()+0.5)
+        Text:SetText(colorFPS(fps).."|rfps "..colorLatency(latencyHome).."|rms")
+        int = 0.8
+    end
+end
+
+Stat:SetScript("OnEnter", function(self)
+    RefreshCput()
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM", 0, -10)
+    GameTooltip:ClearAllPoints()
+    GameTooltip:SetPoint("BOTTOM", self, "TOP", 0, 1)
+    GameTooltip:ClearLines()
+    GameTooltip:AddLine(CHAT_MSG_SYSTEM, 0, .6, 1)
+    GameTooltip:AddLine(" ")
+    
+    if isCPUEngineActive and #currentCPU > 0 then
+        GameTooltip:AddLine(infoL["AddOn CPU Usage"], 1, 1, 1)
+        local maxAddOns = IsShiftKeyDown() and #currentCPU or math.min(C.MaxAddOns, #currentCPU)
+        
+        for i = 1, maxAddOns do
+            local data = currentCPU[i]
+            if data and data[3] then
+                local p = data[2]
+                local r, g = 0, 1
+                if p > 10 then r, g = 1, 0.1
+                elseif p > 5 then r, g = 1, 0.5
+                elseif p > 1 then r, g = 1, 1
+                end
+                GameTooltip:AddDoubleLine(data[1], format("%.2f %%", p), 1, 1, 1, r, g, 0)
+            end
+        end
+        
+        if not IsShiftKeyDown() and #currentCPU > C.MaxAddOns then
+            local more, moreCpu = 0, 0
+            for i = C.MaxAddOns + 1, #currentCPU do
+                if currentCPU[i][3] then
+                    more = more + 1
+                    moreCpu = moreCpu + currentCPU[i][2]
+                end
+            end
+            GameTooltip:AddDoubleLine(format("%d %s (%s)", more, infoL["Hidden"], infoL["Shift"]), format("%.2f %%", moreCpu), .6, .8, 1, .6, .8, 1)
+        end
+        GameTooltip:AddLine(" ")
+    end
+
+    local _, _, latencyHome, latencyWorld = GetNetStats()
+    GameTooltip:AddDoubleLine(infoL["Latency"], format("%s%s(%s)/%s%s(%s)", colorLatency(latencyHome).."|r", "ms", infoL["Home"], colorLatency(latencyWorld).."|r", "ms", CHANNEL_CATEGORY_WORLD), .6, .8, 1, 1, 1, 1)
+    GameTooltip:AddDoubleLine(" ", "--------------", 1, 1, 1, .5, .5, .5)
+    GameTooltip:AddDoubleLine(" ", infoL["CPU Usage"]..(isCPUEngineActive and "|cff55ff55"..ENABLE or "|cffff5555"..DISABLE), 1, 1, 1, .6, .8, 1)
+    GameTooltip:Show()
+end)
+
+Stat:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+Stat:SetScript("OnMouseDown", function(self, btn)
+    if btn == "RightButton" then
+        -- [수정] 클릭 시 CVar를 미리 바꾸지 않고 팝업만 호출
+        StaticPopup_Show("RELOAD_UI_CONFIRM")
+        return
+    end
+    
+    ResetCPUUsage()
+    RefreshCput()
+    if self:IsMouseOver() then
+        self:GetScript("OnEnter")(self)
+    end
+end)
+
+Stat:SetScript("OnUpdate", onUpdate)
