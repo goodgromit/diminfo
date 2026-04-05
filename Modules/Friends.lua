@@ -185,39 +185,41 @@ if not C.Friends then return end
 		wipe(BNTable)
 		for i = 1, total do
 			local accountInfo = C_BattleNet.GetFriendAccountInfo(i)
-			local game = accountInfo.gameAccountInfo
-			
-			if game.isOnline then
-				local _, _, _, realmName, _, faction, _, class, _, zoneName, level, gameText, _, _, _, _, _, isGameAFK, isGameBusy  = BNGetGameAccountInfo(game.gameAccountID)
-				for k, v in pairs(LOCALIZED_CLASS_NAMES_MALE) do
-					if class == v then
-						class = k
+			if accountInfo then
+				local game = accountInfo.gameAccountInfo
+				
+				if game.isOnline then
+					local _, _, _, realmName, _, faction, _, class, _, zoneName, level, gameText, _, _, _, _, _, isGameAFK, isGameBusy  = BNGetGameAccountInfo(game.gameAccountID)
+					for k, v in pairs(LOCALIZED_CLASS_NAMES_MALE) do
+						if class == v then
+							class = k
+						end
 					end
-				end
-				
-				local status, account, infoText
-				if accountInfo.isAFK or isGameAFK then
-					status = " |T"..FRIENDS_TEXTURE_AFK..":0:0:-2:-2:50:50:4:46:4:46|t"
-				elseif accountInfo.isDND or isGameBusy then
-					status = " |T"..FRIENDS_TEXTURE_DND..":0:0:-2:-2:50:50:4:46:4:46|t"
-				else
-					status = ""
-				end
-				
-				if game.clientProgram == BNET_CLIENT_WOW then
-					if ( not zoneName or zoneName == "" ) then
-						infoText = UNKNOWN
+					
+					local status, account, infoText
+					if accountInfo.isAFK or isGameAFK then
+						status = " |T"..FRIENDS_TEXTURE_AFK..":0:0:-2:-2:50:50:4:46:4:46|t"
+					elseif accountInfo.isDND or isGameBusy then
+						status = " |T"..FRIENDS_TEXTURE_DND..":0:0:-2:-2:50:50:4:46:4:46|t"
 					else
-						infoText = zoneName
+						status = ""
 					end
-				else
-					infoText = gameText
+					
+					if game.clientProgram == BNET_CLIENT_WOW then
+						if ( not zoneName or zoneName == "" ) then
+							infoText = UNKNOWN
+						else
+							infoText = zoneName
+						end
+					else
+						infoText = gameText
+					end
+					
+					table.insert(BNTable, { accountInfo.bnetAccountID, accountInfo.accountName, accountInfo.battleTag, accountInfo.isBattleTagFriend, game.characterName,
+						game.gameAccountID, game.clientProgram, game.isOnline, accountInfo.isAFK, accountInfo.isDND,
+						status, realmName, faction, class, zoneName,
+						level, infoText, i })
 				end
-				
-				table.insert(BNTable, { accountInfo.bnetAccountID, accountInfo.accountName, accountInfo.battleTag, accountInfo.isBattleTagFriend, game.characterName,
-					game.gameAccountID, game.clientProgram, game.isOnline, accountInfo.isAFK, accountInfo.isDND,
-					status, realmName, faction, class, zoneName,
-					level, infoText, i })
 			end
 		end
 
