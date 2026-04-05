@@ -4,35 +4,6 @@ local panel = CreateFrame("Frame", nil, UIParent)
 
 if not C.Friends then return end
 
-	-- create a popup for bn broadcast/推送戰網廣播
-	StaticPopupDialogs.SET_BN_BROADCAST = {
-		text = BN_BROADCAST_TOOLTIP,
-		button1 = ACCEPT,
-		button2 = CANCEL,
-		hasEditBox = 1,
-		editBoxWidth = 350,
-		maxLetters = 127,
-		OnAccept = function(self)
-			BNSetCustomMessage(self.editBox:GetText())
-		end,
-		OnShow = function(self)
-			self.editBox:SetText(select(3, BNGetInfo()))
-			self.editBox:SetFocus()
-		end,
-		OnHide = ChatEdit_FocusActiveWindow,
-		EditBoxOnEnterPressed = function(self)
-			BNSetCustomMessage(self:GetText())
-			self:GetParent():Hide()
-		end,
-		EditBoxOnEscapePressed = function(self)
-			self:GetParent():Hide()
-		end,
-		timeout = 0,
-		exclusive = 1,
-		whileDead = 1,
-		hideOnEscape = 1
-	}
-
 	-- localized references for global functions (about 50% faster)
 	local format		= string.format
 	local sort			= table.sort
@@ -94,7 +65,7 @@ if not C.Friends then return end
 		{	-- 玩家狀態
 			text = PLAYER_STATUS,
 			isTitle = true,
-			otCheckable = true
+			notCheckable = true
 		},		
 		{	-- 可用
 			text = "|cff2BC226"..AVAILABLE.."|r",
@@ -157,13 +128,14 @@ if not C.Friends then return end
 			local info = C_FriendList.GetFriendInfoByIndex(i)
 			--connected, name, className, area, notes, guid, level, dnd, afk, referAFriend, mobile
 			if info and info.connected then
-			local status = " |T"..FRIENDS_TEXTURE_ONLINE..":0:0:-2:-2:50:50:4:46:4:46|t"
-			if info.afk then
-				status =  " |T"..FRIENDS_TEXTURE_AFK..":0:0:-2:-2:50:50:4:46:4:46|t"
-			elseif info.dnd then
-				status = " |T"..FRIENDS_TEXTURE_DND..":0:0:-2:-2:50:50:4:46:4:46|t"
-			end
-			
+				local status = " |T"..FRIENDS_TEXTURE_ONLINE..":0:0:-2:-2:50:50:4:46:4:46|t"
+				if info.afk then
+					status =  " |T"..FRIENDS_TEXTURE_AFK..":0:0:-2:-2:50:50:4:46:4:46|t"
+				elseif info.dnd then
+					status = " |T"..FRIENDS_TEXTURE_DND..":0:0:-2:-2:50:50:4:46:4:46|t"
+				end
+
+				local class = info.className
 				for k,v in pairs(LOCALIZED_CLASS_NAMES_MALE) do
 					if class == v then
 						class = k
@@ -258,7 +230,7 @@ if not C.Friends then return end
 		if event == "CHAT_MSG_SYSTEM" then
 			local message = select(1, ...)
 			if not (string.find(message, friendOnline) or string.find(message, friendOffline)) then return end
-		elseif event == "MODIFIER_STATE_CHANGED" and messgae == "LSHIFT" then
+		elseif event == "MODIFIER_STATE_CHANGED" and message == "LSHIFT" then
 			self:GetScript("OnEnter")(self)
 		end
 
@@ -273,67 +245,92 @@ if not C.Friends then return end
 	Stat:SetScript("OnMouseUp", function(self, btn)
 		GameTooltip:Hide()
 		if btn == "LeftButton" then ToggleFriendsFrame() end
-		if btn ~= "RightButton" then return end		
-		
-		local menuCountWhispers = 0
-		local menuCountInvites = 0
-		local classc, levelc, info
-		menuList[2].menuList = {}
-		menuList[3].menuList = {}
-		
-		if #friendTable > 0 then
-			for i = 1, #friendTable do
-				info = friendTable[i]
-				if info[5] then
-					menuCountInvites = menuCountInvites + 1
-					menuCountWhispers = menuCountWhispers + 1
-		
-					local classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[3]], GetQuestDifficultyColor(info[2])
-					if classc == nil then
-						classc = levelc
-					end
-		
-					local nametext = F.Hex(levelc)..info[2].." "..F.Hex(classc)..info[1]
-					menuList[2].menuList[menuCountInvites] = {text = nametext, arg1 = info[1], notCheckable = true, func = inviteClick}
-					menuList[3].menuList[menuCountWhispers] = {text = nametext, arg1 = info[1], notCheckable = true, func = whisperClick}
-				end
-			end
-		end
-		if #BNTable > 0 then
-			for i = 1, #BNTable do
-				info = BNTable[i]
-				if info[8] then
-					menuCountWhispers = menuCountWhispers + 1
-					menuList[3].menuList[menuCountWhispers] = {text = "|cff70C0F5"..info[2], arg1 = info[2], arg2 = info[1], notCheckable = true, func = BNwhisperClick}
+		if btn ~= "RightButton" then return end
 
-					if info[7] == BNET_CLIENT_WOW and info[13] == select(1, UnitFactionGroup("player")) then
-						menuCountInvites = menuCountInvites + 1
-						local classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[14]], GetQuestDifficultyColor(info[16])
-						
+		MenuUtil.CreateContextMenu(UIParent, function(owner, rootDescription)
+			-- 타이틀
+			rootDescription:CreateTitle(OPTIONS_MENU)
+
+			-- 서브메뉴 헤더 생성
+			local inviteMenu = rootDescription:CreateButton(INVITE)
+			local whisperMenu = rootDescription:CreateButton(CHAT_MSG_WHISPER_INFORM)
+
+			-- 일반 친구 목록 처리
+			if #friendTable > 0 then
+				for i = 1, #friendTable do
+					local info = friendTable[i]
+					if info[5] then
+						local classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[3]], GetQuestDifficultyColor(info[2])
 						if classc == nil then
 							classc = levelc
 						end
-						--if UnitInParty(info[5]) or UnitInRaid(info[5]) then grouped = 1 else grouped = 2 end						
-						local nametext = F.Hex(levelc)..info[16].." "..F.Hex(classc)..info[5]
-						menuList[2].menuList[menuCountInvites] = {text = nametext, arg1 = info[5].. "-"..info[12], notCheckable = true, func = inviteClick}
-					end
-				end
-			end
-		end
 
-		--EasyMenu(menuList, menuFrame, "cursor", 0, -5, "MENU", 3)
-		MenuUtil.CreateContextMenu(UIParent, function(owner, rootDescription)
-			for _, info in ipairs(menuList) do
-				if info.text then
-					if info.isTitle then
-						rootDescription:CreateTitle(info.text)
-					elseif info.hasArrow then
-						local submenu = rootDescription:CreateButton(info.text, info.func)
-					else
-						rootDescription:CreateButton(info.text, info.func)
+						local nametext = F.Hex(levelc)..info[2].." "..F.Hex(classc)..info[1]
+
+						-- 초대 메뉴에 추가
+						inviteMenu:CreateButton(nametext, function()
+							inviteClick(nil, info[1])
+						end)
+
+						-- 귓속말 메뉴에 추가
+						whisperMenu:CreateButton(nametext, function()
+							whisperClick(nil, info[1])
+						end)
 					end
 				end
 			end
+
+			-- 배틀넷 친구 목록 처리
+			if #BNTable > 0 then
+				for i = 1, #BNTable do
+					local info = BNTable[i]
+					if info[8] then
+						-- 귓속말 메뉴에 추가 (모든 배틀넷 친구)
+						whisperMenu:CreateButton("|cff70C0F5"..info[2], function()
+							BNwhisperClick(nil, info[2], info[1])
+						end)
+
+						-- 초대 메뉴에 추가 (같은 진영의 WoW 친구만)
+						if info[7] == BNET_CLIENT_WOW and info[13] == select(1, UnitFactionGroup("player")) then
+							local classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[14]], GetQuestDifficultyColor(info[16])
+							if classc == nil then
+								classc = levelc
+							end
+
+							local nametext = F.Hex(levelc)..info[16].." "..F.Hex(classc)..info[5]
+							inviteMenu:CreateButton(nametext, function()
+								inviteClick(nil, info[5].."-"..info[12])
+							end)
+						end
+					end
+				end
+			end
+
+			-- 구분선
+			rootDescription:CreateDivider()
+
+			-- 플레이어 상태
+			rootDescription:CreateTitle(PLAYER_STATUS)
+
+			rootDescription:CreateButton("|cff2BC226"..AVAILABLE.."|r", function()
+				if IsChatAFK() then
+					C_ChatInfo.SendChatMessage("", "AFK")
+				elseif IsChatDND() then
+					C_ChatInfo.SendChatMessage("", "DND")
+				end
+			end)
+
+			rootDescription:CreateButton("|cffE7E716"..DND.."|r", function()
+				if not IsChatDND() then
+					C_ChatInfo.SendChatMessage("", "DND")
+				end
+			end)
+
+			rootDescription:CreateButton("|cffFF0000"..AFK.."|r", function()
+				if not IsChatAFK() then
+					C_ChatInfo.SendChatMessage("", "AFK")
+				end
+			end)
 		end)
 
 	end)
@@ -344,8 +341,7 @@ if not C.Friends then return end
 		local onlineFriends = C_FriendList.GetNumOnlineFriends()
 		local totalBNet, numBNetOnline = BNGetNumFriends()
 		local totalonline = onlineFriends + numBNetOnline
-		local currentBroadcast = select(4, BNGetInfo())
-		
+
 		if totalonline == 0 then return end
 		if not dataValid then
 			if numberOfFriends > 0 then
@@ -363,14 +359,7 @@ if not C.Friends then return end
 		GameTooltip:SetOwner(self, "ANCHOR_BOTTOM", 0, -10)
 		GameTooltip:ClearLines()
 		GameTooltip:AddDoubleLine(FRIEND, format("%s/%s", totalonline, totalfriends), 0, .6, 1, 0, .6, 1)
-		
-		-- show my BN roadcast
-		if currentBroadcast ~= "" then
-			GameTooltip:AddLine(" ")
-			GameTooltip:AddLine(BATTLENET_BROADCAST)
-			GameTooltip:AddLine(currentBroadcast, .6, .8, 1)
-		end
-		
+
 		-- in-game friends/遊戲好友
 		if onlineFriends > 0 then
 			GameTooltip:AddLine(" ")
