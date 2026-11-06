@@ -1,22 +1,14 @@
-﻿local addon, ns = ...
-local C, F, G = unpack(ns)
-local panel = CreateFrame("Frame", nil, UIParent)
+local addon, ns = ...
+local C, F, G, L = unpack(ns)
 
 if not C.System then return end
+
+local Stat, Text = F.CreateStat("diminfo_System", C.SystemPoint)
 
 -- 애드온 CPU 측정: 게임에 내장된 상시 측정 기능(C_AddOnProfiler)을 쓴다. 리로드나 CVar 설정이 필요 없다.
 -- 최근 60틱 평균 시간을 기준으로 한다(Blizzard 애드온 목록의 "현재 CPU"와 같은 기준).
 local CPU_METRIC = Enum.AddOnProfilerMetric.RecentAverageTime
-
-local Stat = CreateFrame("Frame", "diminfo_System")
-Stat:EnableMouse(true)
-Stat:SetFrameStrata("BACKGROUND")
-Stat:SetFrameLevel(3)
-
-local Text  = panel:CreateFontString(nil, "OVERLAY")
-Text:SetFont(G.Fonts, G.FontSize, G.FontFlag)
-Text:SetPoint(unpack(C.SystemPoint))
-Stat:SetAllPoints(Text)
+local UPDATE_INTERVAL = 1	-- 바의 FPS, 지연 시간 갱신 주기(초)
 
 local function colorLatency(latency)
 	if latency < 300 then return "|cff0CD809"..latency
@@ -79,30 +71,22 @@ local function RefreshCPU()
 	return CPUPercent(overallVal)
 end
 
-local int = 1
-local function onUpdate(self, t)
-	int = int - t
-	if int < 0 then
-		local _, _, latencyHome = GetNetStats()
-		local fps = floor(GetFramerate()+0.5)
-		Text:SetText(colorFPS(fps).."|rfps "..colorLatency(latencyHome).."|rms")
-		int = 0.8
-	end
+local function UpdateText()
+	local _, _, latencyHome = GetNetStats()
+	local fps = floor(GetFramerate() + 0.5)
+	Text:SetText(colorFPS(fps).."|rfps "..colorLatency(latencyHome).."|rms")
 end
 
 Stat:SetScript("OnEnter", function(self)
-	GameTooltip:SetOwner(self, "ANCHOR_BOTTOM", 0, -10)
-	GameTooltip:ClearAllPoints()
-	GameTooltip:SetPoint("BOTTOM", self, "TOP", 0, 1)
-	GameTooltip:ClearLines()
+	F.OpenTooltip(self, true)
 	GameTooltip:AddLine(CHAT_MSG_SYSTEM, 0, .6, 1)
 	GameTooltip:AddLine(" ")
 
-	local profilerEnabled = C_AddOnProfiler.IsEnabled()
-	if profilerEnabled then
+	-- CPU 측정은 게임이 항상 켜 두는 기능이다. 혹시 꺼져 있으면 CPU 부분을 표시하지 않는다.
+	if C_AddOnProfiler.IsEnabled() then
 		local totalPct = RefreshCPU()
 		local tr, tg = PercentColor(totalPct)
-		GameTooltip:AddDoubleLine(infoL["AddOn CPU Usage"], FormatPercent(totalPct), 1, 1, 1, tr, tg, 0)
+		GameTooltip:AddDoubleLine(L["AddOn CPU Usage"], FormatPercent(totalPct), 1, 1, 1, tr, tg, 0)
 
 		local maxAddOns = IsShiftKeyDown() and #cpuList or math.min(C.MaxAddOns, #cpuList)
 		for i = 1, maxAddOns do
@@ -117,19 +101,15 @@ Stat:SetScript("OnEnter", function(self)
 			for i = maxAddOns + 1, #cpuList do
 				moreTime = moreTime + cpuList[i][3]
 			end
-			GameTooltip:AddDoubleLine(format("%d %s (%s)", #cpuList - maxAddOns, infoL["Hidden"], infoL["Shift"]), FormatPercent(CPUPercent(moreTime)), .6, .8, 1, .6, .8, 1)
+			GameTooltip:AddDoubleLine(format("%d %s (%s)", #cpuList - maxAddOns, L["Hidden"], L["Shift"]), FormatPercent(CPUPercent(moreTime)), .6, .8, 1, .6, .8, 1)
 		end
 		GameTooltip:AddLine(" ")
 	end
 
 	local _, _, latencyHome, latencyWorld = GetNetStats()
-	GameTooltip:AddDoubleLine(infoL["Latency"], format("%s%s(%s)/%s%s(%s)", colorLatency(latencyHome).."|r", "ms", infoL["Home"], colorLatency(latencyWorld).."|r", "ms", CHANNEL_CATEGORY_WORLD), .6, .8, 1, 1, 1, 1)
-	GameTooltip:AddDoubleLine(" ", "--------------", 1, 1, 1, .5, .5, .5)
-	GameTooltip:AddDoubleLine(" ", infoL["CPU Usage"]..(profilerEnabled and "|cff55ff55"..ENABLE or "|cffff5555"..DISABLE), 1, 1, 1, .6, .8, 1)
+	GameTooltip:AddDoubleLine(L["Latency"], format("%s%s(%s)/%s%s(%s)", colorLatency(latencyHome).."|r", "ms", L["Home"], colorLatency(latencyWorld).."|r", "ms", CHANNEL_CATEGORY_WORLD), .6, .8, 1, 1, 1, 1)
 	GameTooltip:Show()
 end)
-
-Stat:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 -- 좌클릭: Blizzard 애드온 목록 창 열기/닫기 (같은 CPU 수치를 더 자세히 볼 수 있다)
 Stat:SetScript("OnMouseDown", function(self, btn)
@@ -142,4 +122,5 @@ Stat:SetScript("OnMouseDown", function(self, btn)
 	end
 end)
 
-Stat:SetScript("OnUpdate", onUpdate)
+UpdateText()
+C_Timer.NewTicker(UPDATE_INTERVAL, UpdateText)
