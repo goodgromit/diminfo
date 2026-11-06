@@ -43,7 +43,6 @@ if not C.Durability then return end
 
 	-- tooltip
 	local function OnEvent(self)
-		if diminfo.AutoRepair == nil then diminfo.AutoRepair = true end
 		local dura_current = 0
 		local dura_max = 0
 		for i = 1, 11 do

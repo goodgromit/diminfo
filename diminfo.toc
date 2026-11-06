@@ -1,8 +1,8 @@
-## Interface: 20505
+## Interface: 16001
 ## Author: Loshine, EK, gromit
-## Title: |cff777777dim|rinfo_Classic
+## Title: |cff777777dim|rinfo
 ## Notes: Info Data Bar
-## Version: C1.3
+## Version: F1.0
 ## SavedVariables: diminfo
 ## X-Credits: Tukz, Katae, Loshine, DDestruction, msylgj0, Siweia, gromit
 

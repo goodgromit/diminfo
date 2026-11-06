@@ -17,10 +17,6 @@ if not C.Bags then return end
 	Stat:SetAllPoints(Text)
 
 	local function OnEvent(self, event, ...)
-		if diminfo.AutoSell == nil then
-			diminfo.AutoSell = true
-		end
-
 		-- text
 		local free, total, used = 0, 0, 0
 		for i = 0, NUM_BAG_SLOTS do
