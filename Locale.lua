@@ -23,8 +23,6 @@
 		["Latency"] = "延遲：",
 		["CPU Usage"] = "顯示CPU占用比例：",
 		["AddOn CPU Usage"] = "插件CPU占用",
-		["Reload UI(on)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：重載介面後顯示插件的CPU佔用。",
-		["Reload UI(off)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：重載介面後隱藏插件的CPU佔用。",
 	}
 elseif GetLocale() == "zhCN" then
 	infoL = {
@@ -51,8 +49,6 @@ elseif GetLocale() == "zhCN" then
 		["Latency"] = "延迟：",
 		["CPU Usage"] = "显示CPU占用比例：",
 		["AddOn CPU Usage"] = "插件CPU占用",
-		["Reload UI(on)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：重载界面后显示插件的CPU佔用。",
-		["Reload UI(off)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：重载界面后隐藏插件的CPU佔用。",
 	}
 elseif GetLocale() == "koKR" then
 	infoL = {
@@ -79,8 +75,6 @@ elseif GetLocale() == "koKR" then
 		["Latency"] = "지연 시간：",
 		["CPU Usage"] = "CPU 사용률：",
 		["AddOn CPU Usage"] = "애드온 CPU 사용량",
-		["Reload UI(on)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：애드온을 다시 로드하면 CPU사용량이 표시됩니다.",
-		["Reload UI(off)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：애드온을 다시 로드하면 CPU사용량이 숨겨집니다.",
 	}
 else
 
@@ -108,7 +102,5 @@ else
 		["Latency"] = "Latency",
 		["CPU Usage"] = "Show CPU Usage",
 		["AddOn CPU Usage"] = "AddOn CPU Usage",
-		["Reload UI(on)"] = "|cff777777dim|rinfo[|cff00ff00System|r]: You could see addon's CPU usage after reloding UI.",
-		["Reload UI(off)"] = "|cff777777dim|rinfo[|cff00ff00System|r]: You could hide the addon's CPU usage table after reloding UI.",
 	}
 end
