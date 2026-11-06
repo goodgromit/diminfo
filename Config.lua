@@ -1,12 +1,12 @@
 ----------------------
--- Dont touch this! --
+-- 수정하지 마세요! --
 ----------------------
 
 local addon, ns = ...
-ns[1] = {} -- C, config
-ns[2] = {} -- F, functions, constants, variables
-ns[3] = {} -- G, globals (Optionnal)
--- ns[4] = L, locale (Locale.lua)
+ns[1] = {} -- C: 설정
+ns[2] = {} -- F: 함수, 상수, 변수
+ns[3] = {} -- G: 공용 값 (선택)
+-- ns[4] = L: 로케일 문자열 (Locale.lua)
 
 local C, F, G = unpack(ns)
 
@@ -42,83 +42,82 @@ loader:SetScript("OnEvent", function(self, _, name)
 	self:UnregisterEvent("ADDON_LOADED")
 end)
 
-G.Ccolors = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[select(2, UnitClass("player"))] -- Class color / 職業顏色
+G.Ccolors = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[select(2, UnitClass("player"))] -- 직업 색
 
 local MediaFolder = "Interface\\AddOns\\diminfo\\Media\\"
 
 ------------
--- Global --
+-- 전체 --
 ------------
 
-C.Panel = true			-- Enable panel / 啟用面板
-C.ClassColor = true		-- Enable font color / 啟用職業染色
+C.Panel = true			-- 배경 패널 사용
+C.ClassColor = true		-- 이름표를 직업 색으로 표시
 
 -----------
--- Media --
+-- 텍스처, 글꼴 --
 -----------
 
 G.Tex = "Interface\\Buttons\\WHITE8x8"
 G.Glow = MediaFolder.."glow.tga"
-G.Fonts = STANDARD_TEXT_FONT		-- 字型 / Font
-G.FontSize = 12						-- 大小 / Font size
-G.FontFlag = "OUTLINE"				-- 描邊 / Font outline
+G.Fonts = STANDARD_TEXT_FONT		-- 글꼴
+G.FontSize = 12						-- 글자 크기
+G.FontFlag = "OUTLINE"				-- 글자 외곽선
 
 -----------
--- Panel --
+-- 패널 --
 -----------
 
--- name, anchor, parent, x, y, width, height, shadow
--- name, 錨點，父級框體，x座標，y座標，寬度，高度，陰影
+-- 이름, 기준점, 부모 프레임, x 좌표, y 좌표, 너비, 높이, 그림자 크기
 C.Panel1 = {"panel1", "TOP", UIParent, 0, -3, 800, 15, 3}
 
--- add if you need, max to C.Panel5 / 自己加，最多到C.Panel5
+-- 필요하면 추가 (C.Panel5까지)
 --C.Panel2 = {"panel2", "TOP", UIParent, 10, -5, 200, 8, 3}
 
 --------------
--- Settings --
+-- 항목 설정 --
 --------------
 
--- Zone text and Position / 地名座標
+-- 지역명과 좌표
 C.Positions = true
 --C.PositionsPoint = {"TOP", Minimap, 0, 10}
 --C.PositionsPoint = {"TOP", UIParent, 0, -6}
 C.PositionsPoint = {"CENTER", "panel1", "CENTER", 0, 0}
 
--- Memory / 記憶體占用列表
+-- 애드온 메모리 사용량
 C.Memory = true
 C.MaxAddOns = 30
 C.MemoryPoint = {"LEFT", "panel1", "LEFT", 17, 0}
 
--- System: Fps and latency / 幀數與延遲
+-- 시스템: FPS와 지연 시간
 C.System = true
 C.SystemPoint = {"LEFT", "panel1", "LEFT", 117, 0}
 
--- Friends / 好友
+-- 친구
 C.Friends = true
 C.FriendsPoint = {"LEFT", "panel1", "LEFT", 217, 0}
 
--- Guild / 公會
+-- 길드
 C.Guild = true
 C.GuildPoint = {"LEFT", "panel1", "LEFT", 277, 0}
 
--- Timer / 時鐘
+-- 시계
 --C.Time = true
 --C.TimePoint = {"LEFT", "panel1", "LEFT", -3, 8}
 
--- Money / 金錢
+-- 소지금
 C.Money = true
 C.MoneyPoint = {"LEFT", "panel1", "LEFT", 487, 0}
 
--- Durability / 耐久
+-- 내구도
 C.Durability = true
 C.DurabilityPoint = {"LEFT", "panel1", "LEFT", 637, 0}
 
--- Bags / 背包
+-- 가방
 C.Bags = true
 C.BagsPoint = {"LEFT", "panel1", "LEFT", 727, 0}
 
 -------------
--- Credits --
+-- 만든 사람들 --
 -------------
 
 -- NDui
