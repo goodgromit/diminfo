@@ -1,7 +1,6 @@
 ﻿if GetLocale() == "zhTW" then
 	infoL = {
 		["AutoSell junk"] = "自動賣垃圾：",
-		["Trash sold, earned "] = "垃圾售出：",
 
 		["AutoRepair"] = "自動修理：",
 		["Repair cost"] = "修理花費：",
@@ -23,13 +22,13 @@
 		["Home"] = "本地",
 		["Latency"] = "延遲：",
 		["CPU Usage"] = "顯示CPU占用比例：",
+		["AddOn CPU Usage"] = "插件CPU占用",
 		["Reload UI(on)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：重載介面後顯示插件的CPU佔用。",
 		["Reload UI(off)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：重載介面後隱藏插件的CPU佔用。",
 	}
 elseif GetLocale() == "zhCN" then
 	infoL = {
 		["AutoSell junk"] = "自动卖垃圾：",
-		["Trash sold, earned "] = "垃圾售出：",
 
 		["AutoRepair"] = "自动修理：",
 		["Repair cost"] = "修理花费：",
@@ -51,13 +50,13 @@ elseif GetLocale() == "zhCN" then
 		["Home"] = "本地",
 		["Latency"] = "延迟：",
 		["CPU Usage"] = "显示CPU占用比例：",
+		["AddOn CPU Usage"] = "插件CPU占用",
 		["Reload UI(on)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：重载界面后显示插件的CPU佔用。",
 		["Reload UI(off)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：重载界面后隐藏插件的CPU佔用。",
 	}
 elseif GetLocale() == "koKR" then
 	infoL = {
 		["AutoSell junk"] = "회색아이템 자동판매：",
-		["Trash sold, earned "] = "회색아이템 판매소득：",
 
 		["AutoRepair"] = "자동수리：",
 		["Repair cost"] = "수리비용：",
@@ -79,6 +78,7 @@ elseif GetLocale() == "koKR" then
 		["Home"] = "지역",
 		["Latency"] = "지연 시간：",
 		["CPU Usage"] = "CPU 사용률：",
+		["AddOn CPU Usage"] = "애드온 CPU 사용량",
 		["Reload UI(on)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：애드온을 다시 로드하면 CPU사용량이 표시됩니다.",
 		["Reload UI(off)"] = "|cff777777dim|rinfo[|cff00ff00System|r]：애드온을 다시 로드하면 CPU사용량이 숨겨집니다.",
 	}
@@ -86,7 +86,6 @@ else
 
 	infoL = {
 		["AutoSell junk"] = "Auto Sell junk: ",
-		["Trash sold, earned "] = "Trash sold, earned: ",
 
 		["AutoRepair"] = "Auto Repair: ",
 		["Repair cost"] = "Repair cost: ",
@@ -108,6 +107,7 @@ else
 		["Home"] = "Home",
 		["Latency"] = "Latency",
 		["CPU Usage"] = "Show CPU Usage",
+		["AddOn CPU Usage"] = "AddOn CPU Usage",
 		["Reload UI(on)"] = "|cff777777dim|rinfo[|cff00ff00System|r]: You could see addon's CPU usage after reloding UI.",
 		["Reload UI(off)"] = "|cff777777dim|rinfo[|cff00ff00System|r]: You could hide the addon's CPU usage table after reloding UI.",
 	}

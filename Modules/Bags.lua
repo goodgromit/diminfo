@@ -56,44 +56,12 @@ if not C.Bags then return end
 	end)
 
 	-- Auto sell gray
+	-- Blizzard 상인 창의 "잡동사니 모두 팔기" 버튼과 같은 C_MerchantFrame.SellAllJunkItems를 쓴다.
+	-- 판매 금액은 게임이 시스템 메시지로 알려 주므로 따로 출력하지 않는다.
 	local SellGray = CreateFrame("Frame")
 	SellGray:RegisterEvent("MERCHANT_SHOW")
-
 	SellGray:SetScript("OnEvent", function()
-		-- 자동 판매 옵션이 켜져 있는지 확인
-		if not diminfo.AutoSell then return end
-
-		local totalEarnings = 0
-		-- 가방 번호는 보통 0~4(기본+가방4개)이며, 최신 버전은 재료 가방(5)까지 포함 가능
-		for bag = 0, 5 do
-			for slot = 1, C_Container.GetContainerNumSlots(bag) do
-				-- 최신 API는 정보를 테이블 형태로 반환함
-				local containerInfo = C_Container.GetContainerItemInfo(bag, slot)
-				
-				if containerInfo then
-					local itemLink = containerInfo.hyperlink
-					local stackCount = containerInfo.stackCount
-					
-					-- 아이템 링크가 있고 정보가 유효한지 확인
-					if itemLink then
-						local itemName, _, itemQuality, _, _, _, _, _, _, _, itemSellPrice = C_Item.GetItemInfo(itemLink)
-						
-						-- 품질이 0(잡동사니/회색)이고 판매 가격이 있는 경우
-						if itemQuality == 0 and itemSellPrice and itemSellPrice > 0 then
-							local currentPrice = itemSellPrice * stackCount
-							
-							-- 아이템 판매 실행 (최신 API 권장)
-							C_Container.UseContainerItem(bag, slot)
-							totalEarnings = totalEarnings + currentPrice
-						end
-					end
-				end
-			end
-		end
-
-		-- 판매 금액이 있다면 출력
-		if totalEarnings > 0 then
-			local goldString = GetMoneyString(totalEarnings)
-			print(format("|cff99CCFF%s|r %s", infoL["Trash sold, earned "] or "잡동사니 판매 완료: ", goldString))
-		end
+		if not diminfo.AutoSell or not C_MerchantFrame.IsSellAllJunkEnabled() then return end
+		if C_MerchantFrame.GetNumJunkItems() == 0 then return end
+		C_MerchantFrame.SellAllJunkItems()
 	end)

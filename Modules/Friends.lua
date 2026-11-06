@@ -155,10 +155,17 @@ if not C.Friends then return end
 
 		-- refresh when on/offline/上下線時強制更新
 		if event == "CHAT_MSG_SYSTEM" then
-			local message = select(1, ...)
-			if not (string.find(message, friendOnline) or string.find(message, friendOffline)) then return end
-		elseif event == "MODIFIER_STATE_CHANGED" and message == "LSHIFT" then
-			self:GetScript("OnEnter")(self)
+			local message = ...
+			-- 채팅 잠금 중에는 메시지가 secret 값일 수 있어 문자열 검색을 하지 않는다
+			if issecretvalue(message) then return end
+			if not (string.find(message, friendOnline, 1, true) or string.find(message, friendOffline, 1, true)) then return end
+		elseif event == "MODIFIER_STATE_CHANGED" then
+			-- Shift를 누르거나 뗄 때 툴팁을 다시 그린다 (마우스가 올라가 있을 때만 등록되는 이벤트)
+			local key = ...
+			if key == "LSHIFT" or key == "RSHIFT" then
+				self:GetScript("OnEnter")(self)
+			end
+			return
 		end
 
 		-- force refresh tooltip/獲取列表時強制更新
