@@ -5,7 +5,21 @@ if not C.Memory then return end
 
 local Stat, Text = F.CreateStat("diminfo_Memory", C.MemoryPoint)
 
-local UPDATE_INTERVAL = 5	-- 바 글자 갱신 주기(초)
+-- 애드온 메모리 측정 주기(초)
+-- UpdateAddOnMemoryUsage는 비싼 호출이다. Blizzard 애드온 목록(AddonList.lua)과 같이 15초에 한 번만 부른다.
+local UPDATE_INTERVAL = 15
+
+-- 애드온 메모리 측정. 마지막 측정 후 UPDATE_INTERVAL이 지나지 않았으면 그 값을 그대로 쓴다.
+-- force가 true면 시간과 상관없이 측정한다(메모리 정리 직후 등).
+local lastMeasured
+local function MeasureMemory(force)
+	local now = GetTime()
+	-- 0.5초 여유: 타이머가 조금 일찍 울려도 그 회차 측정을 건너뛰지 않게 한다
+	if force or not lastMeasured or now - lastMeasured >= UPDATE_INTERVAL - 0.5 then
+		UpdateAddOnMemoryUsage()
+		lastMeasured = now
+	end
+end
 
 -- KB 값을 "12.3 kb" / "4.5 mb" 형식으로 (단위는 흰색)
 local function formatMem(kb)
@@ -27,8 +41,8 @@ local function memColor(kb)
 end
 
 -- 로드된 애드온의 메모리 사용량 합계(KB)
-local function GetTotalMemory()
-	UpdateAddOnMemoryUsage()
+local function GetTotalMemory(force)
+	MeasureMemory(force)
 	local total = 0
 	for i = 1, C_AddOns.GetNumAddOns() do
 		total = total + GetAddOnMemoryUsage(i)
@@ -40,7 +54,7 @@ end
 local memList = {}
 local function RefreshList()
 	wipe(memList)
-	UpdateAddOnMemoryUsage()
+	MeasureMemory()
 	local total = 0
 	for i = 1, C_AddOns.GetNumAddOns() do
 		if C_AddOns.IsAddOnLoaded(i) then
@@ -53,13 +67,14 @@ local function RefreshList()
 	return total
 end
 
-local function UpdateText()
-	local total = GetTotalMemory()
+local ADDONS_LABEL = F.Label(ADDONS)
+local function UpdateText(force)
+	local total = GetTotalMemory(force)
 	local value, unit = total, "kb"
 	if total >= 1024 then
 		value, unit = total / 1024, "mb"
 	end
-	Text:SetText(F.Label(ADDONS)..format(" %.1f", value)..F.Label(unit))
+	F.SetText(Text, ADDONS_LABEL..format(" %.1f", value)..F.Label(unit))
 end
 
 Stat:SetScript("OnEnter", function(self)
@@ -99,11 +114,17 @@ Stat:SetScript("OnMouseDown", function(self, btn)
 	collectgarbage("collect")
 	print(format("|cff66C6FF%s|r%s", L["Garbage collected"], formatMem(before - collectgarbage("count"))))
 
-	UpdateText()
+	-- 정리된 결과가 바로 보이도록 즉시 다시 측정한다
+	UpdateText(true)
 	if self:IsMouseOver() then
 		self:GetScript("OnEnter")(self)
 	end
 end)
 
 UpdateText()
-C_Timer.NewTicker(UPDATE_INTERVAL, UpdateText)
+
+-- 주기적으로 바 글자 갱신. 전투 중에는 건너뛰고 직전 값을 그대로 둔다(전투 후 다음 주기에 갱신).
+C_Timer.NewTicker(UPDATE_INTERVAL, function()
+	if InCombatLockdown() then return end
+	UpdateText()
+end)

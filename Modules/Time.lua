@@ -7,7 +7,7 @@ local Stat, Text = F.CreateStat("diminfo_Time", C.TimePoint)
 
 -- 바의 시계. 게임의 시계 설정(지역/서버 시간, 24시간제)을 그대로 따른다.
 local function UpdateText()
-	Text:SetText(GameTime_GetTime(true))
+	F.SetText(Text, GameTime_GetTime(true))
 end
 
 -- "오전/오후" 표시를 소문자 am/pm으로

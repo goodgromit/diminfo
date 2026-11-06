@@ -74,7 +74,7 @@ end
 local function UpdateText()
 	local _, _, latencyHome = GetNetStats()
 	local fps = floor(GetFramerate() + 0.5)
-	Text:SetText(colorFPS(fps).."|rfps "..colorLatency(latencyHome).."|rms")
+	F.SetText(Text, colorFPS(fps).."|rfps "..colorLatency(latencyHome).."|rms")
 end
 
 Stat:SetScript("OnEnter", function(self)

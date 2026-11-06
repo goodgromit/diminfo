@@ -46,52 +46,89 @@ local function formatCoords()
 	return format("%.1f, %.1f", coordX * 100, coordY * 100)
 end
 
--- 툴팁이 떠 있는 동안 0.1초마다 좌표를 갱신한다
-local function UpdateCoords(self, elapsed)
-	self.elapsed = (self.elapsed or 0) + elapsed
-	if self.elapsed > .1 then
-		local x, y = GetPlayerMapPos(C_Map.GetBestMapForUnit("player"))
-		if x then
-			coordX, coordY = x, y
-		else
-			coordX, coordY = 0, 0
-			self:SetScript("OnUpdate", nil)
-		end
-		self:GetScript("OnEnter")(self)
-		self.elapsed = 0
+-- 현재 좌표를 구한다. 구할 수 없으면 (0, 0)으로 두고 false
+local function RefreshCoords()
+	local x, y = GetPlayerMapPos(C_Map.GetBestMapForUnit("player"))
+	if x then
+		coordX, coordY = x, y
+		return true
 	end
+	coordX, coordY = 0, 0
+	return false
 end
 
 -- 지역 이름과 PvP 상태 (pvp: pvpType, isSubZonePvP, factionName)
 local subzone, zone, pvp
-local function Update()
-	subzone, zone, pvp = GetSubZoneText(), GetZoneText(), {C_PvP.GetZonePVPInfo()}
-	if not colorT[pvp[1]] then pvp[1] = "neutral" end
-	Text:SetText(subzone ~= "" and subzone or zone)
-	Text:SetTextColor(unpack(colorT[pvp[1]][2]))
+
+-- 툴팁 첫 줄: "지역 (x, y)"
+local function CoordLine()
+	return format("%s |cffffffff(%s)", zone, formatCoords())
+end
+
+-- 툴팁이 떠 있는 동안 0.1초마다 좌표를 확인하고, 바뀌었을 때만 첫 줄(좌표 줄)의 글자를 고친다
+local shownCoordLine
+local function UpdateCoords(self, elapsed)
+	self.elapsed = (self.elapsed or 0) + elapsed
+	if self.elapsed < .1 then return end
+	self.elapsed = 0
+
+	if not GameTooltip:IsOwned(self) then
+		self:SetScript("OnUpdate", nil)
+		return
+	end
+	if not RefreshCoords() then
+		self:SetScript("OnUpdate", nil)
+	end
+
+	local line = CoordLine()
+	if line ~= shownCoordLine then
+		shownCoordLine = line
+		local fontString = GameTooltip:GetLeftLine(1)
+		if fontString then
+			fontString:SetText(line)
+			GameTooltip:Show()	-- 글자 길이가 바뀌었을 수 있으므로 툴팁 크기를 다시 맞춘다
+		end
+	end
 end
 
 Stat:SetScript("OnEnter", function(self)
-	self:SetScript("OnUpdate", UpdateCoords)
-
 	GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT", 0, -10)
 	GameTooltip:ClearAllPoints()
 	GameTooltip:SetPoint("BOTTOM", self, "BOTTOM", 0, 1)
 	GameTooltip:ClearLines()
 
 	if IsInInstance() then
+		-- 인스턴스 안에서는 좌표를 표시하지 않으므로 갱신도 하지 않는다
+		self:SetScript("OnUpdate", nil)
 		GameTooltip:AddLine(zone, 0, .8, 1)
 	else
-		GameTooltip:AddLine(format("%s |cffffffff(%s)", zone, formatCoords()), 0, .8, 1)
+		RefreshCoords()
+		shownCoordLine = CoordLine()
+		GameTooltip:AddLine(shownCoordLine, 0, .8, 1)
 
 		local r, g, b = unpack(colorT[pvp[1]][2])
 		if subzone and subzone ~= zone then
 			GameTooltip:AddLine(subzone, r, g, b)
 		end
 		GameTooltip:AddLine(format(colorT[pvp[1]][1], pvp[3] or ""), r, g, b)
+
+		self.elapsed = 0
+		self:SetScript("OnUpdate", UpdateCoords)
 	end
 	GameTooltip:Show()
 end)
+
+local function Update()
+	subzone, zone, pvp = GetSubZoneText(), GetZoneText(), {C_PvP.GetZonePVPInfo()}
+	if not colorT[pvp[1]] then pvp[1] = "neutral" end
+	F.SetText(Text, subzone ~= "" and subzone or zone)
+	Text:SetTextColor(unpack(colorT[pvp[1]][2]))
+
+	-- 툴팁이 떠 있는 동안 지역이 바뀌면 툴팁을 다시 그린다
+	if GameTooltip:IsOwned(Stat) then
+		Stat:GetScript("OnEnter")(Stat)
+	end
+end
 
 Stat:SetScript("OnLeave", function(self)
 	self:SetScript("OnUpdate", nil)
@@ -105,6 +142,7 @@ Stat:SetScript("OnMouseUp", function(_, btn)
 	elseif IsInInstance() then
 		ChatFrameUtil.OpenChat(zone)
 	else
+		RefreshCoords()	-- 마지막으로 마우스를 올렸을 때가 아닌 지금 좌표
 		ChatFrameUtil.OpenChat(format("%s (%s)", zone, formatCoords()))
 	end
 end)

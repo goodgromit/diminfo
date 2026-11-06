@@ -71,20 +71,20 @@ local function gradientColor(perc)
 	return format("|cff%02x%02x%02x", r*255, g*255, b*255)
 end
 
+local DURABILITY_LABEL = F.Label(DURABILITY).." "
+
 local function Update()
 	local sum, count = 0, 0
 	for _, slot in ipairs(slots) do
-		local link, _, itemID = GetSlotItem(slot)
-		if link then
-			local current, max = GetInventoryItemDurability(slot[1])
-			if current then
-				slot[3], slot[4] = current, max
-				sum = sum + current / max * 100
-				count = count + 1
-			else
-				-- 내구도가 없는 아이템(투척 무기 등)은 개수를 표시한다
-				slot[3], slot[4] = C_Item.GetItemCount(itemID), 0
-			end
+		-- 내구도가 있는 장비(대부분)는 이 호출 하나로 끝난다
+		local current, max = GetInventoryItemDurability(slot[1])
+		if current and max and max > 0 then
+			slot[3], slot[4] = current, max
+			sum = sum + current / max * 100
+			count = count + 1
+		elseif C_Item.DoesItemExist(slot[5]) then
+			-- 내구도가 없는 아이템(투척 무기 등)은 개수를 표시한다
+			slot[3], slot[4] = C_Item.GetItemCount(C_Item.GetItemID(slot[5])), 0
 		else
 			slot[3], slot[4] = 0, 0
 		end
@@ -93,9 +93,9 @@ local function Update()
 	-- 장비 평균 내구도
 	if count > 0 then
 		local pct = math.floor(sum / count)
-		Text:SetText(F.Label(DURABILITY).." "..gradientColor(pct / 100)..pct.."|r%")
+		F.SetText(Text, DURABILITY_LABEL..gradientColor(pct / 100)..pct.."|r%")
 	else
-		Text:SetText(L["none"])
+		F.SetText(Text, L["none"])
 	end
 end
 
@@ -137,6 +137,7 @@ end)
 
 Stat:RegisterEvent("PLAYER_ENTERING_WORLD")
 Stat:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
+Stat:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")	-- 장비 교체 (캐릭터 창과 같은 이벤트)
 Stat:SetScript("OnEvent", Update)
 
 -- 자동 수리

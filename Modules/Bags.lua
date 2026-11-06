@@ -7,6 +7,7 @@ local Stat, Text = F.CreateStat("diminfo_Bag", C.BagsPoint)
 
 -- 가방 칸 수 (가방 0 ~ NUM_BAG_SLOTS, 재료 가방 제외)
 local free, total = 0, 0
+local BAGS_LABEL = F.Label(BAGSLOT).." "
 
 local function Update()
 	free, total = 0, 0
@@ -14,7 +15,7 @@ local function Update()
 		free = free + C_Container.GetContainerNumFreeSlots(bag)
 		total = total + C_Container.GetContainerNumSlots(bag)
 	end
-	Text:SetText(F.Label(BAGSLOT).." "..free.."/"..total)
+	F.SetText(Text, BAGS_LABEL..free.."/"..total)
 end
 
 Stat:SetScript("OnEnter", function(self)
