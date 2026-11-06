@@ -128,6 +128,21 @@ local function BuildBNTable(total)
 	table.sort(BNTable, function(a, b) return a.accountName < b.accountName end)
 end
 
+-- 바의 접속 친구 수. 친구 정보 이벤트(BN_FRIEND_INFO_CHANGED 등)는 자주 오므로 1초 단위로 묶어서 한 번만 센다.
+local FRIENDS_LABEL = F.Label(FRIENDS).." "
+local textPending = false
+local function UpdateText()
+	textPending = false
+	local _, numBNetOnline = BNGetNumFriends()
+	F.SetText(Text, FRIENDS_LABEL..(C_FriendList.GetNumOnlineFriends() + numBNetOnline))
+end
+
+local function ScheduleTextUpdate()
+	if textPending then return end
+	textPending = true
+	C_Timer.After(1, UpdateText)
+end
+
 local function Update(self, event, ...)
 	if event == "CHAT_MSG_SYSTEM" then
 		-- 친구 접속/접속 해제 메시지만 처리한다.
@@ -144,10 +159,14 @@ local function Update(self, event, ...)
 		return
 	end
 
+	-- 친구 목록이 바뀌었으니 다음 툴팁 때 목록을 다시 만든다
 	dataValid = false
 
-	local _, numBNetOnline = BNGetNumFriends()
-	Text:SetText(F.Label(FRIENDS).." "..(C_FriendList.GetNumOnlineFriends() + numBNetOnline))
+	if event == "PLAYER_ENTERING_WORLD" then
+		UpdateText()
+	else
+		ScheduleTextUpdate()
+	end
 end
 
 -- 좌클릭: 친구 창, 우클릭: 초대/귓속말/상태 메뉴

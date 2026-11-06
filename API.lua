@@ -18,8 +18,18 @@ F.Hex = function(r, g, b)
 end
 
 -- 바 항목 이름표. 직업 색 설정이 켜져 있으면 직업 색으로 칠한다.
+-- 직업 색은 바뀌지 않으므로 색 코드는 한 번만 만든다.
+local classHex = C.ClassColor and G.Ccolors and F.Hex(G.Ccolors)
 F.Label = function(text)
-	return C.ClassColor and (F.Hex(G.Ccolors)..text.."|r") or text
+	return classHex and (classHex..text.."|r") or text
+end
+
+-- 바 글자 설정. 내용이 같으면 다시 쓰지 않는다(글자 크기 재계산과 위치 재배치를 줄인다).
+F.SetText = function(fontString, text)
+	if fontString._diminfoText ~= text then
+		fontString:SetText(text)
+		fontString._diminfoText = text
+	end
 end
 
 -- 켜짐/꺼짐 표시 문자열
