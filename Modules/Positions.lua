@@ -125,9 +125,9 @@ if not C.Positions then return end
 			ToggleFrame(WorldMapFrame)
 		else
 			if not IsInInstance() then
-				ChatFrame_OpenChat(format("%s (%s)", zone, formatCoords()), chatFrame)
+				ChatFrameUtil.OpenChat(format("%s (%s)", zone, formatCoords()))
 			else
-				ChatFrame_OpenChat(format("%s", zone), chatFrame)
+				ChatFrameUtil.OpenChat(zone)
 			end
 		end
 	end)
