@@ -1,5 +1,10 @@
-﻿if GetLocale() == "zhTW" then
-	infoL = {
+local addon, ns = ...
+
+-- 로케일 문자열. 다른 애드온과 이름이 겹치지 않도록 전역이 아닌 애드온 내부(ns[4])에 둔다.
+local L
+
+if GetLocale() == "zhTW" then
+	L = {
 		["AutoSell junk"] = "自動賣垃圾：",
 
 		["AutoRepair"] = "自動修理：",
@@ -17,15 +22,13 @@
 		["Default UI Memory Usage:"] = "内建插件資源占用：",
 		["Total Memory Usage:"] = "總資源占用：",
 		["Garbage collected"] = "釋放記憶體：",
-		["AutoCollect"] = "自動整理暫存記憶體：",
 
 		["Home"] = "本地",
 		["Latency"] = "延遲：",
-		["CPU Usage"] = "顯示CPU占用比例：",
 		["AddOn CPU Usage"] = "插件CPU占用",
 	}
 elseif GetLocale() == "zhCN" then
-	infoL = {
+	L = {
 		["AutoSell junk"] = "自动卖垃圾：",
 
 		["AutoRepair"] = "自动修理：",
@@ -43,15 +46,13 @@ elseif GetLocale() == "zhCN" then
 		["Default UI Memory Usage:"] = "内建插件资源占用：",
 		["Total Memory Usage:"] = "总资源占用：",
 		["Garbage collected"] = "释放內存：",
-		["AutoCollect"] = "自动整理暂存：",
 
 		["Home"] = "本地",
 		["Latency"] = "延迟：",
-		["CPU Usage"] = "显示CPU占用比例：",
 		["AddOn CPU Usage"] = "插件CPU占用",
 	}
 elseif GetLocale() == "koKR" then
-	infoL = {
+	L = {
 		["AutoSell junk"] = "회색아이템 자동판매：",
 
 		["AutoRepair"] = "자동수리：",
@@ -69,16 +70,13 @@ elseif GetLocale() == "koKR" then
 		["Default UI Memory Usage:"] = "기본 UI 메모리 사용：",
 		["Total Memory Usage:"] = "전체 메모리 사용：",
 		["Garbage collected"] = "여유 메모리 확보：",
-		["AutoCollect"] = "자동 메모리 확보：",
 
 		["Home"] = "지역",
 		["Latency"] = "지연 시간：",
-		["CPU Usage"] = "CPU 사용률：",
 		["AddOn CPU Usage"] = "애드온 CPU 사용량",
 	}
 else
-
-	infoL = {
+	L = {
 		["AutoSell junk"] = "Auto Sell junk: ",
 
 		["AutoRepair"] = "Auto Repair: ",
@@ -96,11 +94,11 @@ else
 		["Default UI Memory Usage:"] = "Default UI Memory Usage: ",
 		["Total Memory Usage:"] = "Total Memory Usage: ",
 		["Garbage collected"] = "Garbage collected: ",
-		["AutoCollect"] = "AutoCollect: ",
 
 		["Home"] = "Home",
 		["Latency"] = "Latency",
-		["CPU Usage"] = "Show CPU Usage",
 		["AddOn CPU Usage"] = "AddOn CPU Usage",
 	}
 end
+
+ns[4] = L
