@@ -89,10 +89,10 @@ if not C.Memory then return end
 	Stat:SetScript("OnMouseDown", function(self,btn)
 		if btn == "LeftButton" then
 			RefreshMem(self)
-			local before = gcinfo()
+			local before = collectgarbage("count")
 			collectgarbage("collect")
 			RefreshMem(self)
-			print(format("|cff66C6FF%s|r%s", infoL["Garbage collected"], formatMem(before - gcinfo())))
+			print(format("|cff66C6FF%s|r%s", infoL["Garbage collected"], formatMem(before - collectgarbage("count"))))
 		elseif btn == "RightButton" then
 			diminfo.AutoCollect = not diminfo.AutoCollect
 		end
@@ -143,7 +143,7 @@ if not C.Memory then return end
 			end
 
 			GameTooltip:AddLine(" ")
-			GameTooltip:AddDoubleLine(infoL["Default UI Memory Usage:"],formatMem(gcinfo() - Total),.6,.8,1,1,1,1)
+			GameTooltip:AddDoubleLine(infoL["Default UI Memory Usage:"],formatMem(collectgarbage("count") - Total),.6,.8,1,1,1,1)
 			GameTooltip:AddDoubleLine(infoL["Total Memory Usage:"],formatMem(collectgarbage"count"),.6,.8,1,1,1,1)
 			GameTooltip:AddDoubleLine(" ","--------------",1,1,1,0.5,0.5,0.5)
 			GameTooltip:AddDoubleLine(" ",infoL["AutoCollect"]..(diminfo.AutoCollect and "|cff55ff55"..ENABLE or "|cffff5555"..DISABLE),1,1,1,.4,.78,1)

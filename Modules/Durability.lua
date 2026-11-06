@@ -30,6 +30,47 @@ if not C.Durability then return end
 		[11] = {18, INVTYPE_RANGED, 100, 100}
 	}
 
+	-- 슬롯별 ItemLocation (C_Item API용, 한 번만 만든다)
+	for i = 1, #localSlots do
+		localSlots[i][5] = ItemLocation:CreateFromEquipmentSlot(localSlots[i][1])
+	end
+
+	-- 장착 아이템 정보: 링크, 아이콘, 아이템 ID (없으면 nil)
+	local function GetSlotItem(i)
+		local loc = localSlots[i][5]
+		if not C_Item.DoesItemExist(loc) then return end
+		return C_Item.GetItemLink(loc), C_Item.GetItemIcon(loc), C_Item.GetItemID(loc)
+	end
+
+	-- 특성 트리별 투자 포인트 ("31/20/0" 형식)
+	-- Forever는 C_Traits 특성 시스템을 쓴다. Blizzard 특성 창(Blizzard_ClassTalentsFrame.lua)과 같은 경로로 구한다.
+	local function GetTalentPoints()
+		local configID = C_SpecializationInfo.GetCombatConfigIDForSpecGroup(C_SpecializationInfo.GetActiveSpecGroup())
+		local configInfo = configID and C_Traits.GetConfigInfo(configID)
+		local treeID = configInfo and configInfo.treeIDs and configInfo.treeIDs[1]
+		if not treeID then return end
+
+		local displayInfos = C_Traits.GetGroupDisplayInfoByTreeID(treeID)
+		if not displayInfos or #displayInfos == 0 then return end
+
+		local groupIDs = {}
+		for i, info in ipairs(displayInfos) do
+			groupIDs[i] = info.groupID
+		end
+
+		local spentByGroup = {}
+		for _, groupInfo in ipairs(C_Traits.GetGroupCurrencyInfo(configID, groupIDs) or {}) do
+			local currency = groupInfo.currencyInfos and groupInfo.currencyInfos[1]
+			spentByGroup[groupInfo.traitNodeGroupID] = currency and currency.spent or 0
+		end
+
+		local points = {}
+		for i, info in ipairs(displayInfos) do
+			points[i] = spentByGroup[info.groupID] or 0
+		end
+		return table.concat(points, "/")
+	end
+
 	local Total = 0
 	local current, max
 
@@ -46,7 +87,8 @@ if not C.Durability then return end
 		local dura_current = 0
 		local dura_max = 0
 		for i = 1, 11 do
-			if GetInventoryItemLink("player", localSlots[i][1]) ~= nil then
+			local link, _, itemID = GetSlotItem(i)
+			if link then
 				current, max = GetInventoryItemDurability(localSlots[i][1])
 				if current then
 					localSlots[i][3] = current
@@ -54,8 +96,9 @@ if not C.Durability then return end
 					dura_current = dura_current + (current/max*100)
 					dura_max = dura_max + 100
 				else
-					localSlots[i][3] = C_Item.GetItemCount(GetInventoryItemID("player", localSlots[i][1]));
-					localSlots[i][4] = 0;
+					-- 내구도가 없는 아이템(투척 무기 등)은 개수를 표시한다
+					localSlots[i][3] = C_Item.GetItemCount(itemID)
+					localSlots[i][4] = 0
 				end
 			else
 				localSlots[i][3] = 0
@@ -83,21 +126,20 @@ if not C.Durability then return end
 			GameTooltip:SetPoint("BOTTOM", self, "TOP", 0, 1)
 			GameTooltip:ClearLines()
 
-			-- C_SpecializationInfo.GetSpecializationInfo, https://warcraft.wiki.gg/wiki/API_C_SpecializationInfo.GetSpecializationInfo
-			local p1 = select(3, GetTalentTabInfo(1))
-			local p2 = select(3, GetTalentTabInfo(2))
-			local p3 = select(3, GetTalentTabInfo(3))
-			GameTooltip:AddDoubleLine(TALENT, p1.."/"..p2.."/"..p3, 0, .6, 1, 0, .6, 1)
-			GameTooltip:AddLine(" ")
+			local talentPoints = GetTalentPoints()
+			if talentPoints then
+				GameTooltip:AddDoubleLine(TALENT, talentPoints, 0, .6, 1, 0, .6, 1)
+				GameTooltip:AddLine(" ")
+			end
 			for i = 1, 11 do
-				if localSlots[i][4] ~= 0 then
-					green = localSlots[i][3]/localSlots[i][4]*2
-					red = 1 - green
-					local slotIcon = "|T"..GetInventoryItemTexture("player", localSlots[i][1])..":16:16:0:0:50:50:4:46:4:46|t " or ""
-					GameTooltip:AddDoubleLine(localSlots[i][2], slotIcon..GetInventoryItemLink("player", localSlots[i][1]).." "..floor(localSlots[i][3]/localSlots[i][4]*100).."%", 1, 1, 1, red+1, green,0)
-				elseif (localSlots[i][4] == 0 and localSlots[i][3] ~= 0) then
-					local slotIcon = "|T"..GetInventoryItemTexture("player", localSlots[i][1])..":16:16:0:0:50:50:4:46:4:46|t " or ""
-					GameTooltip:AddDoubleLine(localSlots[i][2], slotIcon..GetInventoryItemLink("player", localSlots[i][1]).." "..localSlots[i][3], 1,1,1, 1,1,1)
+				local link, icon = GetSlotItem(i)
+				local slotIcon = icon and ("|T"..icon..":16:16:0:0:50:50:4:46:4:46|t ") or ""
+				if link and localSlots[i][4] ~= 0 then
+					local green = localSlots[i][3]/localSlots[i][4]*2
+					local red = 1 - green
+					GameTooltip:AddDoubleLine(localSlots[i][2], slotIcon..link.." "..floor(localSlots[i][3]/localSlots[i][4]*100).."%", 1, 1, 1, red+1, green,0)
+				elseif link and localSlots[i][3] ~= 0 then
+					GameTooltip:AddDoubleLine(localSlots[i][2], slotIcon..link.." "..localSlots[i][3], 1,1,1, 1,1,1)
 				else
 					GameTooltip:AddDoubleLine(localSlots[i][2], infoL["none"], 1,1,1, 1,1,1)
 				end

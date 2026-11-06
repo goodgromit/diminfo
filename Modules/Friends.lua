@@ -20,97 +20,23 @@ if not C.Friends then return end
 	Text:SetPoint(unpack(C.FriendsPoint))
 	Stat:SetAllPoints(Text)
 
-	-- status/狀態判斷
-	local function checkStatus()
-		local status = {}
-		if IsChatDND() then
-			status = {false, true, false}
-		elseif IsChatAFK() then
-			status = {false, false, true}
-		else
-			status = {true, false, false}
-		end
-		return status
+	-- 내 캐릭터의 AFK, DND 상태
+	-- 채팅 잠금(보스전 등) 중에는 UnitIsAFK/UnitIsDND가 secret 값을 돌려주므로 확인하지 않는다(nil 반환).
+	local function GetPlayerStatus()
+		if C_ChatInfo.InChatMessagingLockdown() then return end
+		return UnitIsAFK("player"), UnitIsDND("player")
 	end
-	
-	-- right-click menu/右鍵選單
-	local menuFrame = CreateFrame("Frame", "FriendRightClickMenu", UIParent, "UIDropDownMenuTemplate")
-	local menuList = {
-		{	-- 標題
-			text = OPTIONS_MENU,
-			isTitle = true,
-			notCheckable = true
-		},
-		{	-- 邀請
-			text = INVITE,
-			hasArrow = true,
-			notCheckable = true,
-		},
-		{	-- 密語
-			text = CHAT_MSG_WHISPER_INFORM,
-			hasArrow = true,
-			notCheckable = true,
-		},
-		{	-- 廣播
-			text = BATTLENET_BROADCAST,
-			notCheckable = true,
-			func = function()
-				StaticPopup_Show("SET_BN_BROADCAST")
-			end
-		},		
-		{	-- 空行
-			text = "",
-			notCheckable = true
-		},
-		{	-- 玩家狀態
-			text = PLAYER_STATUS,
-			isTitle = true,
-			notCheckable = true
-		},		
-		{	-- 可用
-			text = "|cff2BC226"..AVAILABLE.."|r",
-			checked = function() return checkStatus()[1] end,
-			func = function()
-				if IsChatAFK() then
-					C_ChatInfo.SendChatMessage("", "AFK")
-				elseif IsChatDND() then
-					C_ChatInfo.SendChatMessage("", "DND")
-				end
-			end
-		},
-		{	-- 忙碌
-			text = "|cffE7E716"..DND.."|r",
-			checked = function() return checkStatus()[2] end,
-			func = function()
-				if not IsChatDND() then
-					C_ChatInfo.SendChatMessage("", "DND")
-				end
-			end
-		},
-		{	-- 暫離
-			text = "|cffFF0000"..AFK.."|r",
-			checked = function() return checkStatus()[3] end,
-			func = function()
-				if not IsChatAFK() then
-					C_ChatInfo.SendChatMessage("", "AFK")
-				end
-			end
-		},
-		}
 
 	local function inviteClick(self, arg1, arg2, checked)
-		menuFrame:Hide()
-		InviteUnit(arg1)
+		C_PartyInfo.InviteUnit(arg1)
 	end
 
 	local function whisperClick(self,arg1,arg2,checked)
-		menuFrame:Hide() 
-		SetItemRef( "player:"..arg1, ("|Hplayer:%1$s|h[%1$s]|h"):format(arg1), "LeftButton" )		 
+		SetItemRef( "player:"..arg1, ("|Hplayer:%1$s|h[%1$s]|h"):format(arg1), "LeftButton" )
 	end
-	
+
 	local function BNwhisperClick(self,arg1,arg2,checked)
-		menuFrame:Hide() 
-		SetItemRef( "BNplayer:"..arg1..":"..arg2, ("|Hplayer:%1$s|h[%1$s]|h"):format(arg1), "LeftButton" )		 
+		SetItemRef( "BNplayer:"..arg1..":"..arg2, ("|Hplayer:%1$s|h[%1$s]|h"):format(arg1), "LeftButton" )
 	end
 		
 	local worldOfWarcraftString = "WOW"
@@ -161,17 +87,18 @@ if not C.Friends then return end
 				local game = accountInfo.gameAccountInfo
 				
 				if game.isOnline then
-					local _, _, _, realmName, _, faction, _, class, _, zoneName, level, gameText, _, _, _, _, _, isGameAFK, isGameBusy  = BNGetGameAccountInfo(game.gameAccountID)
-					for k, v in pairs(LOCALIZED_CLASS_NAMES_MALE) do
-						if class == v then
-							class = k
-						end
-					end
-					
-					local status, account, infoText
-					if accountInfo.isAFK or isGameAFK then
+					local realmName, faction, class = game.realmName, game.factionName, game.classFilename
+					local zoneName, level, gameText = game.areaName, game.characterLevel, game.richPresence
+
+					-- 초대 가능: 같은 게임(Forever), 같은 지역의 서버, 같은 진영인 WoW 캐릭터
+					-- (Forever 친구 창 FriendsFrame_BattlenetInviteByIndex와 같은 조건)
+					local canInvite = game.clientProgram == BNET_CLIENT_WOW and game.wowProjectID == WOW_PROJECT_ID
+						and game.playerGuid ~= nil and (game.realmID or 0) ~= 0 and faction == UnitFactionGroup("player")
+
+					local status, infoText
+					if accountInfo.isAFK or game.isGameAFK then
 						status = " |T"..FRIENDS_TEXTURE_AFK..":0:0:-2:-2:50:50:4:46:4:46|t"
-					elseif accountInfo.isDND or isGameBusy then
+					elseif accountInfo.isDND or game.isGameBusy then
 						status = " |T"..FRIENDS_TEXTURE_DND..":0:0:-2:-2:50:50:4:46:4:46|t"
 					else
 						status = ""
@@ -190,7 +117,7 @@ if not C.Friends then return end
 					table.insert(BNTable, { accountInfo.bnetAccountID, accountInfo.accountName, accountInfo.battleTag, accountInfo.isBattleTagFriend, game.characterName,
 						game.gameAccountID, game.clientProgram, game.isOnline, accountInfo.isAFK, accountInfo.isDND,
 						status, realmName, faction, class, zoneName,
-						level, infoText, i })
+						level, infoText, i, canInvite })
 				end
 			end
 		end
@@ -290,8 +217,8 @@ if not C.Friends then return end
 							BNwhisperClick(nil, info[2], info[1])
 						end)
 
-						-- 초대 메뉴에 추가 (같은 진영의 WoW 친구만)
-						if info[7] == BNET_CLIENT_WOW and info[13] == select(1, UnitFactionGroup("player")) then
+						-- 초대 메뉴에 추가 (초대 가능한 친구만, info[19])
+						if info[19] then
 							local classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[14]], GetQuestDifficultyColor(info[16])
 							if classc == nil then
 								classc = levelc
@@ -299,7 +226,7 @@ if not C.Friends then return end
 
 							local nametext = F.Hex(levelc)..info[16].." "..F.Hex(classc)..info[5]
 							inviteMenu:CreateButton(nametext, function()
-								inviteClick(nil, info[5].."-"..info[12])
+								C_BattleNet.InviteFriend(info[6])
 							end)
 						end
 					end
@@ -312,22 +239,26 @@ if not C.Friends then return end
 			-- 플레이어 상태
 			rootDescription:CreateTitle(PLAYER_STATUS)
 
+			-- 빈 메시지로 "AFK"/"DND"를 보내면 해당 상태가 켜지거나 꺼진다(/afk, /dnd와 같음)
 			rootDescription:CreateButton("|cff2BC226"..AVAILABLE.."|r", function()
-				if IsChatAFK() then
+				local afk, dnd = GetPlayerStatus()
+				if afk then
 					C_ChatInfo.SendChatMessage("", "AFK")
-				elseif IsChatDND() then
+				elseif dnd then
 					C_ChatInfo.SendChatMessage("", "DND")
 				end
 			end)
 
 			rootDescription:CreateButton("|cffE7E716"..DND.."|r", function()
-				if not IsChatDND() then
+				local afk, dnd = GetPlayerStatus()
+				if dnd == false then
 					C_ChatInfo.SendChatMessage("", "DND")
 				end
 			end)
 
 			rootDescription:CreateButton("|cffFF0000"..AFK.."|r", function()
-				if not IsChatAFK() then
+				local afk = GetPlayerStatus()
+				if afk == false then
 					C_ChatInfo.SendChatMessage("", "AFK")
 				end
 			end)
