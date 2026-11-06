@@ -39,8 +39,39 @@ if not C.Guild then return end
 		[5] = {9, CLASS}
 	}
 
-	function RequestGuildRoster()
-    	C_GuildInfo.GuildRoster()
+	local function RequestGuildRoster()
+		C_GuildInfo.GuildRoster()
+	end
+
+	-- 직업 ID → 직업 파일명("WARRIOR" 등) 캐시. RAID_CLASS_COLORS 키로 쓴다.
+	local classFileCache = {}
+	local function GetClassFile(classID)
+		if not classID then return end
+		local classFile = classFileCache[classID]
+		if not classFile then
+			local classInfo = C_CreatureInfo.GetClassInfo(classID)
+			classFile = classInfo and classInfo.classFile
+			classFileCache[classID] = classFile
+		end
+		return classFile
+	end
+
+	-- 게임에 접속 중인 상태 (모바일 앱 접속은 초대, 귓속말 대상이 아니므로 제외)
+	local inGamePresence = {
+		[Enum.ClubMemberPresence.Online] = true,
+		[Enum.ClubMemberPresence.Away] = true,
+		[Enum.ClubMemberPresence.Busy] = true,
+	}
+	local statusIcon = {
+		[Enum.ClubMemberPresence.Away] = "|T"..FRIENDS_TEXTURE_AFK..":16:16:-8:-1:32:32|t",
+		[Enum.ClubMemberPresence.Busy] = "|T"..FRIENDS_TEXTURE_DND..":16:16:-8:-1:32:32|t",
+	}
+
+	-- 길드 클럽 ID. 클럽 데이터가 준비되기 전이나 채팅 잠금(보스전 등) 중에는 nil.
+	-- 채팅 잠금 중에는 C_Club 함수들이 secret 값을 돌려주므로 읽지 않는다.
+	local function GetGuildClubId()
+		if C_ChatInfo.InChatMessagingLockdown() then return end
+		return C_Club.GetGuildClubId()
 	end
 
 	-- sort by/排序
@@ -56,41 +87,39 @@ if not C.Guild then return end
 		end)
 	end
 
+	-- 접속 중인 길드원 목록(guildTable)을 만든다. 성공하면 접속 인원, 전체 인원을 돌려준다.
+	-- guildTable 항목: { 이름, 등급, 레벨, 지역, 메모, 관리자 메모, 접속, 상태 아이콘, 직업 파일명, 등급 순서, 파티 표시, 본인 여부 }
 	local function BuildGuildTable()
+		local clubId = GetGuildClubId()
+		if not clubId then return end
+
 		wipe(guildTable)
-		local name, rank, level, zone, note, officernote, connected, status, class
+		local memberIds = C_Club.GetClubMembers(clubId) or {}
 		local count = 0
-		for i = 1, GetNumGuildMembers() do
-			name, rank, rankIndex, level, _, zone, note, officernote, connected, status, class = GetGuildRosterInfo(i)
+		for _, memberId in ipairs(memberIds) do
+			local m = C_Club.GetMemberInfo(clubId, memberId)
+			if m and m.name and inGamePresence[m.presence] then
+				local name = m.name
+				-- 파티원은 회색 *, 본인은 초록 *
+				local flag = ""
+				if m.isSelf then
+					flag = "|cff00FF00*|r"
+				elseif UnitInParty(name) or UnitInRaid(name) then
+					flag = "|cffaaaaaa*|r"
+				end
 
-			-- we are only interested in online members/只顯示線上成員
-			if status == 1 then
-				status = "|T"..FRIENDS_TEXTURE_AFK..":16:16:-8:-1:32:32|t"
-			elseif status == 2 then
-				status = "|T"..FRIENDS_TEXTURE_DND..":16:16:-8:-1:32:32|t"
-			else
-				status = " "
-			end
-			-- colored member in group/染色隊友
-			if (UnitInParty(name) or UnitInRaid(name)) and name ~= UnitName("player") then
-				flag = "|cffaaaaaa*|r"
-			elseif name == UnitName("player") then
-				flag = "|cff00FF00*|r"
-			else
-				flag = ""
-			end
-
-			if connected then
 				count = count + 1
-				guildTable[count] = { name, rank, level, zone, note, officernote, connected, status, class, rankIndex, flag }
+				guildTable[count] = { name, m.guildRank or "", m.level or 0, m.zone or "", m.memberNote or "", m.officerNote or "",
+					true, statusIcon[m.presence] or " ", GetClassFile(m.classID) or "", m.guildRankOrder or 0, flag, m.isSelf }
 			end
 		end
 		SortGuildTable(IsShiftKeyDown())
+		return count, #memberIds
 	end
 
 	-- guild daily massage/公會每日訊息
 	local function UpdateGuildMessage()
-		guildMotD = GetGuildRosterMOTD()
+		guildMotD = C_GuildInfo.GetMOTD()
 	end
 
 
@@ -136,8 +165,10 @@ if not C.Guild then return end
 				return
 			end
 
-			local _, online = GetNumGuildMembers()
-			Text:SetText(format(C.ClassColor and F.Hex(G.Ccolors)..GUILD.." |r".."%d" or GUILD.." %d", online))
+			local online = BuildGuildTable()
+			if online then
+				Text:SetText(format(C.ClassColor and F.Hex(G.Ccolors)..GUILD.." |r".."%d" or GUILD.." %d", online))
+			end
 			else
 			Text:SetText(C.ClassColor and F.Hex(G.Ccolors)..infoL["No Guild"] or infoL["No Guild"])
 		end
@@ -189,9 +220,9 @@ if not C.Guild then return end
 			-- 길드원 데이터 처리 루프
 			for i = 1, #guildTable do
 				local info = guildTable[i]
-				-- 온라인 상태(info[7]) 및 본인 제외
-				if info[7] and info[1] ~= GetUnitName("player") then
-					local classc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[9]]
+				-- 온라인 상태(info[7]) 및 본인(info[12]) 제외
+				if info[7] and not info[12] then
+					local classc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[9]] or HIGHLIGHT_FONT_COLOR
 					local levelc = GetQuestDifficultyColor(tonumber(info[3]))
 					
 					-- 이름 텍스트 생성
@@ -205,10 +236,8 @@ if not C.Guild then return end
 
 					-- [초대 메뉴] (파티 중이 아닐 때만)
 					if not (UnitInParty(info[1]) or UnitInRaid(info[1])) then
-						-- 보안 속성 주입을 위해 AddInitializer 사용
-						inviteMenu:CreateButton(nameText, function() end):AddInitializer(function(button)
-							button:SetAttribute("type", "invite")
-							button:SetAttribute("inviteunit", info[1])
+						inviteMenu:CreateButton(nameText, function()
+							C_PartyInfo.InviteUnit(info[1])
 						end)
 					end
 				end
@@ -236,20 +265,24 @@ if not C.Guild then return end
 	Stat:SetScript("OnEnter", function(self)
 		if not IsInGuild() then return end
 
-		local total, online = GetNumGuildMembers()
 		RequestGuildRoster()
-		BuildGuildTable()
+		local online, total = BuildGuildTable()
+		if not online then return end
 
-		local guildName, guildRank = GetGuildInfo("player")
+		local clubId = GetGuildClubId()
+		local clubInfo = clubId and C_Club.GetClubInfo(clubId)
+		local selfInfo = clubId and C_Club.GetMemberInfoForSelf(clubId)
+		local guildName = clubInfo and clubInfo.name or GUILD
+		local guildRank = selfInfo and selfInfo.guildRank or ""
 
 		GameTooltip:SetOwner(self, "ANCHOR_BOTTOM", 0, -10)
 		GameTooltip:ClearLines()
-		GameTooltip:AddDoubleLine(format(guildName), format(format("%d/%d", online, total)),0,.6,1,0,.6,1)
+		GameTooltip:AddDoubleLine(guildName, format("%d/%d", online, total),0,.6,1,0,.6,1)
 		GameTooltip:AddDoubleLine(RANK, guildRank)
 		--GameTooltip:AddLine(guildRank, unpack(tthead))
 
 		--  guild daily massage/公會每日訊息
-		local guildMotD = GetGuildRosterMOTD()
+		local guildMotD = C_GuildInfo.GetMOTD()
 		if guildMotD ~= "" then
 			GameTooltip:AddLine(" ")
 			GameTooltip:AddLine(GUILD_MOTD, unpack(tthead))
@@ -275,7 +308,7 @@ if not C.Guild then return end
 				else
 				zonec = inactivezone
 			end
-			classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[9]], GetQuestDifficultyColor(info[3])
+			classc, levelc = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[info[9]] or HIGHLIGHT_FONT_COLOR, GetQuestDifficultyColor(info[3])
 
 			if IsShiftKeyDown() then
 				GameTooltip:AddDoubleLine(format(nameRankString, info[1], info[2]), info[4], classc.r, classc.g, classc.b, zonec.r, zonec.g, zonec.b)
