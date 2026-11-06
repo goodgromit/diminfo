@@ -18,6 +18,7 @@ if not C.Guild then return end
 	local nameRankString = "%s |cff999999-|cffffffff %s"
 	local friendOnline, friendOffline = gsub(ERR_FRIEND_ONLINE_SS, "\124Hplayer:%%s\124h%[%%s%]\124h",""), gsub(ERR_FRIEND_OFFLINE_S, "%%s", "")
 	local guildTable, guildMotD = {}, ""
+	local MAX_SHOWN = 39	-- 툴팁에 표시할 최대 길드원 수 (기존 동작과 같은 39명)
 
 	-- make addon frame anchor-able
 	local Stat = CreateFrame("Frame", "diminfo_Guild")
@@ -130,11 +131,14 @@ if not C.Guild then return end
 		if IsInGuild() then
 			-- special handler to request guild roster updates when guild members come online or go
 			-- offline, since this does not automatically trigger the GuildRoster update from the server
+			-- 접속/접속 해제 메시지일 때만 명단 갱신을 요청한다. 다른 시스템 메시지는 무시한다.
 			if event == "CHAT_MSG_SYSTEM" then
-				local message = select(1, ...)
-				if string.find(message, friendOnline) or string.find(message, friendOffline) then
+				local message = ...
+				-- 채팅 잠금 중에는 메시지가 secret 값일 수 있어 문자열 검색을 하지 않는다
+				if not issecretvalue(message) and (string.find(message, friendOnline, 1, true) or string.find(message, friendOffline, 1, true)) then
 					RequestGuildRoster()
 				end
+				return
 			end
 
 			if event == "GUILD_MOTD" then
@@ -294,11 +298,9 @@ if not C.Guild then return end
 		local shown = 0
 
 		for i = 1, #guildTable do
-			-- if more then 30 guild members are online, we don"t Show any more, but inform user there are more
-			if 40 - shown <= 1 then
-				if online - 30 > 1 then
-					GameTooltip:AddLine(format(format("%s %d", FRIENDS_LIST_ONLINE, online - 30)), ttsubh.r, ttsubh.g, ttsubh.b)
-				end
+			-- 최대 MAX_SHOWN명까지만 표시하고, 나머지는 인원 수만 알려 준다
+			if shown >= MAX_SHOWN then
+				GameTooltip:AddLine(format("%s %d", FRIENDS_LIST_ONLINE, #guildTable - shown), ttsubh.r, ttsubh.g, ttsubh.b)
 				break
 			end
 

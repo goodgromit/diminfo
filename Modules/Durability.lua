@@ -174,7 +174,7 @@ if not C.Durability then return end
 			if cost > 0 then
 				local money = GetMoney()
 
-				if money > cost then
+				if money >= cost then
 					RepairAllItems()
 					print(format("|cff99CCFF"..infoL["Repair cost"].."|r%s", GetMoneyString(cost)))
 				else
