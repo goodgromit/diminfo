@@ -10,15 +10,17 @@ local Stat, Text = F.CreateStat("diminfo_System", C.SystemPoint)
 local CPU_METRIC = Enum.AddOnProfilerMetric.RecentAverageTime
 local UPDATE_INTERVAL = 1	-- 바의 FPS, 지연 시간 갱신 주기(초)
 
+-- 지연 시간 색: 100ms 미만 초록, 300ms까지 노랑, 그 이상 빨강
 local function colorLatency(latency)
-	if latency < 300 then return "|cff0CD809"..latency
-	elseif latency < 500 then return "|cffE8DA0F"..latency
+	if latency < 100 then return "|cff0CD809"..latency
+	elseif latency <= 300 then return "|cffE8DA0F"..latency
 	else return "|cffD80909"..latency end
 end
 
+-- FPS 색: 30 미만 빨강, 60 미만 노랑, 그 이상 초록
 local function colorFPS(fps)
-	if fps < 15 then return "|cffD80909"..fps
-	elseif fps < 30 then return "|cffE8DA0F"..fps
+	if fps < 30 then return "|cffD80909"..fps
+	elseif fps < 60 then return "|cffE8DA0F"..fps
 	else return "|cff0CD809"..fps end
 end
 
