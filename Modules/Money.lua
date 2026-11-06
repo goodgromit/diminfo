@@ -16,7 +16,7 @@ if not C.Money then return end
 	Stat:SetAllPoints(Text)
 
 	local function OnEvent(self, event, ...)
-		Text:SetText(GetCoinTextureString(GetMoney()));
+		Text:SetText(C_CurrencyInfo.GetCoinTextureString(GetMoney()))
     self:SetAllPoints(Text)
   end
 

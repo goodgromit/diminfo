@@ -85,8 +85,6 @@ if not C.Memory then return end
 		Text:SetText(formatTotal(tTotal))
 	end
 
-	if diminfo.AutoCollect == nil then diminfo.AutoCollect = true end
-
 	-- click function
 	Stat:SetScript("OnMouseDown", function(self,btn)
 		if btn == "LeftButton" then

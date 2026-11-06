@@ -74,8 +74,9 @@ if not C.Positions then return end
 	-- zone check
 	local subzone, zone, pvp
 	local function OnEvent()
-		subzone, zone, pvp = GetSubZoneText(), GetZoneText(), {GetZonePVPInfo()}
-		if not pvp[1] then pvp[1] = "neutral" end
+		-- pvpType, isSubZonePvP, factionName
+		subzone, zone, pvp = GetSubZoneText(), GetZoneText(), {C_PvP.GetZonePVPInfo()}
+		if not colorT[pvp[1]] then pvp[1] = "neutral" end
 		local r,g,b = unpack(colorT[pvp[1]][2])
 		Text:SetText((subzone ~= "") and subzone or zone)
 		Text:SetTextColor(r,g,b)

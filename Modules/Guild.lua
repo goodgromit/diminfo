@@ -95,10 +95,7 @@ if not C.Guild then return end
 
 
 	local function Update(self, event, ...)
-		if (diminfo.Sort == nil) then
-			diminfo.Sort = 5
-		end
-
+		if not sort_array[diminfo.Sort] then diminfo.Sort = 5 end
 		C.Sortingby = sort_array[diminfo.Sort][1]
 
 		if IsInGuild() then

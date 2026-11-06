@@ -34,7 +34,8 @@ F.CreatePanel = function(name, anchor, parent, x, y, w, h, size)
 	panel:SetBackdropColor( .1, .1, .1, .6)
 	panel:SetBackdropBorderColor( .1, .1, .1, .6)
 
-	sd = CreateFrame("Frame", name, panel, "BackdropTemplate")
+	-- 그림자 프레임은 이름 없이 만든다. 같은 이름을 쓰면 전역 panel1이 그림자 프레임으로 덮어써진다.
+	local sd = CreateFrame("Frame", nil, panel, "BackdropTemplate")
 	sd:SetPoint("TOPLEFT", -size, size)
 	sd:SetPoint("BOTTOMRIGHT", size, -size)
 	sd:SetFrameStrata(panel:GetFrameStrata())
