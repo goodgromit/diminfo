@@ -3,11 +3,10 @@ local C, F, G, L = unpack(ns)
 
 if not C.Bags then return end
 
-local Stat, Text = F.CreateStat("diminfo_Bag", C.BagsPoint)
+local Stat, Text = F.CreateStat("diminfo_Bag", C.BagsPoint, "Bags")
 
 -- 가방 칸 수 (가방 0 ~ NUM_BAG_SLOTS, 재료 가방 제외)
 local free, total = 0, 0
-local BAGS_LABEL = F.Label(BAGSLOT).." "
 
 local function Update()
 	free, total = 0, 0
@@ -15,7 +14,7 @@ local function Update()
 		free = free + C_Container.GetContainerNumFreeSlots(bag)
 		total = total + C_Container.GetContainerNumSlots(bag)
 	end
-	F.SetText(Text, BAGS_LABEL..free.."/"..total)
+	F.SetText(Text, F.Label(BAGSLOT).." "..free.."/"..total)
 end
 
 Stat:SetScript("OnEnter", function(self)
@@ -53,3 +52,6 @@ SellGray:SetScript("OnEvent", function()
 	if C_MerchantFrame.GetNumJunkItems() == 0 then return end
 	C_MerchantFrame.SellAllJunkItems()
 end)
+
+-- 설정 창에서 값이 바뀌면 바 글자를 다시 그린다 (API.lua F.ApplySettings)
+Stat.Refresh = function() Update() end

@@ -39,6 +39,8 @@ loader:RegisterEvent("ADDON_LOADED")
 loader:SetScript("OnEvent", function(self, _, name)
 	if name ~= addon then return end
 	ApplyDefaults()
+	-- 설정 창에서 바꾼 값(diminfo.Settings)을 바와 각 항목에 적용 (API.lua)
+	F.ApplySettings()
 	self:UnregisterEvent("ADDON_LOADED")
 end)
 
@@ -111,10 +113,36 @@ C.MoneyPoint = {"LEFT", "panel1", "LEFT", 487, 0}
 -- 내구도
 C.Durability = true
 C.DurabilityPoint = {"LEFT", "panel1", "LEFT", 637, 0}
+C.DurabilityWarn = 30	-- 가장 낮은 장비가 이 % 미만이면 바에 최저값 표시
 
 -- 가방
 C.Bags = true
 C.BagsPoint = {"LEFT", "panel1", "LEFT", 727, 0}
+
+------------------
+-- 설정 창 기본값 --
+------------------
+
+-- 게임 안 설정 창(Options.lua)에서 바꿀 수 있는 값의 기본값. 위 설정에서 그대로 가져온다.
+-- 설정 창에서 바꾼 값만 diminfo.Settings에 저장되고, 바꾸지 않은 값은 계속 이 파일을 따른다.
+C.SettingDefaults = {
+	ClassColor = C.ClassColor,
+	FontSize = G.FontSize,
+	MaxAddOns = C.MaxAddOns,
+	DurabilityWarn = C.DurabilityWarn,
+	PanelWidth = C.Panel1[6],
+	PanelHeight = C.Panel1[7],
+	PanelY = C.Panel1[5],
+}
+
+-- 항목별 가로 위치 (X_항목 이름). 켜져 있는 항목만 넣는다.
+C.StatKeys = {"Memory", "System", "Friends", "Guild", "Positions", "Money", "Durability", "Bags", "Time"}
+for _, key in ipairs(C.StatKeys) do
+	local point = C[key.."Point"]
+	if C[key] and point then
+		C.SettingDefaults["X_"..key] = point[4]
+	end
+end
 
 -------------
 -- 만든 사람들 --

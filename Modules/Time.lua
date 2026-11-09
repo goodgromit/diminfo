@@ -3,7 +3,7 @@ local C, F, G, L = unpack(ns)
 
 if not C.Time then return end
 
-local Stat, Text = F.CreateStat("diminfo_Time", C.TimePoint)
+local Stat, Text = F.CreateStat("diminfo_Time", C.TimePoint, "Time")
 
 -- 바의 시계. 게임의 시계 설정(지역/서버 시간, 24시간제)을 그대로 따른다.
 local function UpdateText()
@@ -65,3 +65,6 @@ end)
 
 UpdateText()
 C_Timer.NewTicker(1, UpdateText)
+
+-- 설정 창에서 값이 바뀌면 바 글자를 다시 그린다 (API.lua F.ApplySettings)
+Stat.Refresh = function() UpdateText() end

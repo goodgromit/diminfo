@@ -3,7 +3,7 @@ local C, F, G, L = unpack(ns)
 
 if not C.System then return end
 
-local Stat, Text = F.CreateStat("diminfo_System", C.SystemPoint)
+local Stat, Text = F.CreateStat("diminfo_System", C.SystemPoint, "System")
 
 -- 애드온 CPU 측정: 게임에 내장된 상시 측정 기능(C_AddOnProfiler)을 쓴다. 리로드나 CVar 설정이 필요 없다.
 -- 최근 60틱 평균 시간을 기준으로 한다(Blizzard 애드온 목록의 "현재 CPU"와 같은 기준).
@@ -90,7 +90,7 @@ Stat:SetScript("OnEnter", function(self)
 		local tr, tg = PercentColor(totalPct)
 		GameTooltip:AddDoubleLine(L["AddOn CPU Usage"], FormatPercent(totalPct), 1, 1, 1, tr, tg, 0)
 
-		local maxAddOns = IsShiftKeyDown() and #cpuList or math.min(C.MaxAddOns, #cpuList)
+		local maxAddOns = IsShiftKeyDown() and #cpuList or math.min(F.Setting("MaxAddOns"), #cpuList)
 		for i = 1, maxAddOns do
 			local name, pct = cpuList[i][1], cpuList[i][2]
 			local r, g = PercentColor(pct)
@@ -126,3 +126,6 @@ end)
 
 UpdateText()
 C_Timer.NewTicker(UPDATE_INTERVAL, UpdateText)
+
+-- 설정 창에서 값이 바뀌면 바 글자를 다시 그린다 (API.lua F.ApplySettings)
+Stat.Refresh = function() UpdateText() end

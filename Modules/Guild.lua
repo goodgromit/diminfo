@@ -3,7 +3,7 @@ local C, F, G, L = unpack(ns)
 
 if not C.Guild then return end
 
-local Stat, Text = F.CreateStat("diminfo_Guild", C.GuildPoint)
+local Stat, Text = F.CreateStat("diminfo_Guild", C.GuildPoint, "Guild")
 
 local CLASS_COLORS = CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS
 local MAX_SHOWN = 39			-- 툴팁에 표시할 최대 길드원 수
@@ -129,12 +129,11 @@ end
 ----------------------------------------------------------------
 -- 바 글자
 ----------------------------------------------------------------
-local GUILD_LABEL, NO_GUILD_LABEL = F.Label(GUILD).." ", F.Label(L["No Guild"])
 local function UpdateText()
 	if not IsInGuild() then
-		F.SetText(Text, NO_GUILD_LABEL)
+		F.SetText(Text, F.Label(L["No Guild"]))
 	elseif lastFullScan > 0 then
-		F.SetText(Text, GUILD_LABEL..onlineCount)
+		F.SetText(Text, F.Label(GUILD).." "..onlineCount)
 	end
 end
 
@@ -410,3 +409,6 @@ Stat:RegisterEvent("CLUB_MEMBER_REMOVED")
 Stat:RegisterEvent("CLUB_MEMBER_UPDATED")
 Stat:RegisterEvent("CHAT_MSG_SYSTEM")
 Stat:SetScript("OnEvent", OnEvent)
+
+-- 설정 창에서 값이 바뀌면 바 글자를 다시 그린다 (API.lua F.ApplySettings)
+Stat.Refresh = function() UpdateText() end

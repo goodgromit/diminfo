@@ -26,6 +26,13 @@ if GetLocale() == "zhTW" then
 		["Home"] = "本地",
 		["Latency"] = "延遲：",
 		["AddOn CPU Usage"] = "插件CPU占用",
+
+		["Session"] = "本次登入",
+		["Income"] = "收入",
+		["Expense"] = "支出",
+		["Net"] = "淨收益",
+		["Session time"] = "登入時間",
+		["Lowest"] = "最低",
 	}
 elseif GetLocale() == "zhCN" then
 	L = {
@@ -50,6 +57,13 @@ elseif GetLocale() == "zhCN" then
 		["Home"] = "本地",
 		["Latency"] = "延迟：",
 		["AddOn CPU Usage"] = "插件CPU占用",
+
+		["Session"] = "本次登录",
+		["Income"] = "收入",
+		["Expense"] = "支出",
+		["Net"] = "净收益",
+		["Session time"] = "登录时间",
+		["Lowest"] = "最低",
 	}
 elseif GetLocale() == "koKR" then
 	L = {
@@ -74,6 +88,13 @@ elseif GetLocale() == "koKR" then
 		["Home"] = "지역",
 		["Latency"] = "지연 시간：",
 		["AddOn CPU Usage"] = "애드온 CPU 사용량",
+
+		["Session"] = "이번 접속",
+		["Income"] = "수입",
+		["Expense"] = "지출",
+		["Net"] = "순이익",
+		["Session time"] = "접속 시간",
+		["Lowest"] = "최저",
 	}
 else
 	L = {
@@ -98,6 +119,13 @@ else
 		["Home"] = "Home",
 		["Latency"] = "Latency",
 		["AddOn CPU Usage"] = "AddOn CPU Usage",
+
+		["Session"] = "This session",
+		["Income"] = "Income",
+		["Expense"] = "Expense",
+		["Net"] = "Net",
+		["Session time"] = "Session time",
+		["Lowest"] = "Lowest",
 	}
 end
 

@@ -3,7 +3,7 @@ local C, F, G, L = unpack(ns)
 
 if not C.Memory then return end
 
-local Stat, Text = F.CreateStat("diminfo_Memory", C.MemoryPoint)
+local Stat, Text = F.CreateStat("diminfo_Memory", C.MemoryPoint, "Memory")
 
 -- 애드온 메모리 측정 주기(초)
 -- UpdateAddOnMemoryUsage는 비싼 호출이다. Blizzard 애드온 목록(AddonList.lua)과 같이 15초에 한 번만 부른다.
@@ -67,14 +67,13 @@ local function RefreshList()
 	return total
 end
 
-local ADDONS_LABEL = F.Label(ADDONS)
 local function UpdateText(force)
 	local total = GetTotalMemory(force)
 	local value, unit = total, "kb"
 	if total >= 1024 then
 		value, unit = total / 1024, "mb"
 	end
-	F.SetText(Text, ADDONS_LABEL..format(" %.1f", value)..F.Label(unit))
+	F.SetText(Text, F.Label(ADDONS)..format(" %.1f", value)..F.Label(unit))
 end
 
 Stat:SetScript("OnEnter", function(self)
@@ -84,7 +83,7 @@ Stat:SetScript("OnEnter", function(self)
 	GameTooltip:AddDoubleLine(ADDONS, formatMem(total), 0, .6, 1, 1, 1, 1)
 	GameTooltip:AddLine(" ")
 
-	local maxAddOns = IsShiftKeyDown() and #memList or math.min(C.MaxAddOns, #memList)
+	local maxAddOns = IsShiftKeyDown() and #memList or math.min(F.Setting("MaxAddOns"), #memList)
 	for i = 1, maxAddOns do
 		local name, mem = memList[i][1], memList[i][2]
 		local r, g = memColor(mem)
@@ -128,3 +127,6 @@ C_Timer.NewTicker(UPDATE_INTERVAL, function()
 	if InCombatLockdown() then return end
 	UpdateText()
 end)
+
+-- 설정 창에서 값이 바뀌면 바 글자를 다시 그린다 (API.lua F.ApplySettings)
+Stat.Refresh = function() UpdateText() end

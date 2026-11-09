@@ -3,7 +3,7 @@ local C, F, G, L = unpack(ns)
 
 if not C.Durability then return end
 
-local Stat, Text = F.CreateStat("diminfo_dura", C.DurabilityPoint)
+local Stat, Text = F.CreateStat("diminfo_dura", C.DurabilityPoint, "Durability")
 
 -- 내구도를 확인할 장비 칸 11개
 -- 항목: { 장비 칸 번호, 칸 이름, 현재 값, 최대 값, ItemLocation }
@@ -71,17 +71,17 @@ local function gradientColor(perc)
 	return format("|cff%02x%02x%02x", r*255, g*255, b*255)
 end
 
-local DURABILITY_LABEL = F.Label(DURABILITY).." "
-
 local function Update()
-	local sum, count = 0, 0
+	local sum, count, lowest = 0, 0, 100
 	for _, slot in ipairs(slots) do
 		-- 내구도가 있는 장비(대부분)는 이 호출 하나로 끝난다
 		local current, max = GetInventoryItemDurability(slot[1])
 		if current and max and max > 0 then
 			slot[3], slot[4] = current, max
-			sum = sum + current / max * 100
+			local pct = current / max * 100
+			sum = sum + pct
 			count = count + 1
+			if pct < lowest then lowest = pct end
 		elseif C_Item.DoesItemExist(slot[5]) then
 			-- 내구도가 없는 아이템(투척 무기 등)은 개수를 표시한다
 			slot[3], slot[4] = C_Item.GetItemCount(C_Item.GetItemID(slot[5])), 0
@@ -90,13 +90,20 @@ local function Update()
 		end
 	end
 
-	-- 장비 평균 내구도
-	if count > 0 then
-		local pct = math.floor(sum / count)
-		F.SetText(Text, DURABILITY_LABEL..gradientColor(pct / 100)..pct.."|r%")
-	else
+	if count == 0 then
 		F.SetText(Text, L["none"])
+		return
 	end
+
+	-- 바: 장비 평균 내구도. 색은 가장 낮은 장비 기준(평균이 높아도 부서지기 직전인 장비를 알아챌 수 있게).
+	-- 가장 낮은 장비가 경고 기준 미만이면 "(최저 5%)"처럼 최저값도 함께 표시한다.
+	local average, low = math.floor(sum / count), math.floor(lowest)
+	local color = gradientColor(low / 100)
+	local text = F.Label(DURABILITY).." "..color..average.."|r%"
+	if low < F.Setting("DurabilityWarn") then
+		text = text.." "..color.."("..L["Lowest"].." "..low.."%)|r"
+	end
+	F.SetText(Text, text)
 end
 
 Stat:SetScript("OnEnter", function(self)
@@ -156,3 +163,6 @@ RepairGear:SetScript("OnEvent", function()
 		print("|cff99CCFF"..L["Go farm, newbie"].."|r")
 	end
 end)
+
+-- 설정 창에서 값이 바뀌면 바 글자를 다시 그린다 (API.lua F.ApplySettings)
+Stat.Refresh = function() Update() end

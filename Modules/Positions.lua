@@ -6,7 +6,7 @@ local C, F, G, L = unpack(ns)
 
 if not C.Positions then return end
 
-local Stat, Text = F.CreateStat("diminfo_pos", C.PositionsPoint)
+local Stat, Text = F.CreateStat("diminfo_pos", C.PositionsPoint, "Positions")
 
 -- PvP 지역 유형별 설명 문구와 색
 local colorT = {
@@ -152,3 +152,6 @@ Stat:RegisterEvent("ZONE_CHANGED")
 Stat:RegisterEvent("ZONE_CHANGED_INDOORS")
 Stat:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 Stat:SetScript("OnEvent", Update)
+
+-- 설정 창에서 값이 바뀌면 바 글자를 다시 그린다 (API.lua F.ApplySettings)
+Stat.Refresh = function() Update() end

@@ -3,7 +3,7 @@ local C, F, G, L = unpack(ns)
 
 if not C.Friends then return end
 
-local Stat, Text = F.CreateStat("diminfo_Friends", C.FriendsPoint)
+local Stat, Text = F.CreateStat("diminfo_Friends", C.FriendsPoint, "Friends")
 
 local CLASS_COLORS = CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS
 local activezone, inactivezone = {r = 0.3, g = 1, b = 0.3}, {r = 0.65, g = 0.65, b = 0.65}
@@ -129,12 +129,11 @@ local function BuildBNTable(total)
 end
 
 -- 바의 접속 친구 수. 친구 정보 이벤트(BN_FRIEND_INFO_CHANGED 등)는 자주 오므로 1초 단위로 묶어서 한 번만 센다.
-local FRIENDS_LABEL = F.Label(FRIENDS).." "
 local textPending = false
 local function UpdateText()
 	textPending = false
 	local _, numBNetOnline = BNGetNumFriends()
-	F.SetText(Text, FRIENDS_LABEL..(C_FriendList.GetNumOnlineFriends() + numBNetOnline))
+	F.SetText(Text, F.Label(FRIENDS).." "..(C_FriendList.GetNumOnlineFriends() + numBNetOnline))
 end
 
 local function ScheduleTextUpdate()
@@ -309,3 +308,6 @@ Stat:RegisterEvent("BN_FRIEND_ACCOUNT_OFFLINE")
 Stat:RegisterEvent("BN_FRIEND_INFO_CHANGED")
 Stat:RegisterEvent("CHAT_MSG_SYSTEM")
 Stat:SetScript("OnEvent", Update)
+
+-- 설정 창에서 값이 바뀌면 바 글자를 다시 그린다 (API.lua F.ApplySettings)
+Stat.Refresh = function() UpdateText() end
