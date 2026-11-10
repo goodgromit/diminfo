@@ -15,16 +15,22 @@ local C, F, G = unpack(ns)
 local defaults = {
 	AutoSell = true,	-- 회색 아이템 자동 판매
 	AutoRepair = true,	-- 자동 수리
+	CurrencyMode = "tracked",	-- 소지금 툴팁 화폐 표시 (hidden: 숨김, tracked: 가방에 표시한 화폐, all: 모든 화폐)
 	Sort = 5,			-- 길드 정렬 기준 (1:이름 2:등급 3:레벨 4:지역 5:직업)
 }
 
 -- 더 이상 쓰지 않는 저장값
 local obsolete = {
 	"AutoCollect",		-- 자동 메모리 정리 (F1.0에서 삭제)
+	"ShowCurrency",		-- 화폐 표시 켜짐/꺼짐 (CurrencyMode로 바뀜)
 }
 
 local function ApplyDefaults()
 	if type(diminfo) ~= "table" then diminfo = {} end
+	-- 예전 저장값 옮기기: 화폐 표시를 끈 적이 있으면 숨김으로
+	if diminfo.CurrencyMode == nil and diminfo.ShowCurrency == false then
+		diminfo.CurrencyMode = "hidden"
+	end
 	for k, v in pairs(defaults) do
 		if diminfo[k] == nil then diminfo[k] = v end
 	end

@@ -30,7 +30,7 @@ if GetLocale() == "zhTW" then
 		["Session"] = "本次登入",
 		["Income"] = "收入",
 		["Expense"] = "支出",
-		["Net"] = "淨收益",
+		["Current money"] = "目前持有金錢",
 		["Session time"] = "登入時間",
 		["Lowest"] = "最低",
 	}
@@ -61,7 +61,7 @@ elseif GetLocale() == "zhCN" then
 		["Session"] = "本次登录",
 		["Income"] = "收入",
 		["Expense"] = "支出",
-		["Net"] = "净收益",
+		["Current money"] = "当前持有金钱",
 		["Session time"] = "登录时间",
 		["Lowest"] = "最低",
 	}
@@ -92,7 +92,7 @@ elseif GetLocale() == "koKR" then
 		["Session"] = "이번 접속",
 		["Income"] = "수입",
 		["Expense"] = "지출",
-		["Net"] = "순이익",
+		["Current money"] = "현재 소지금",
 		["Session time"] = "접속 시간",
 		["Lowest"] = "최저",
 	}
@@ -123,7 +123,7 @@ else
 		["Session"] = "This session",
 		["Income"] = "Income",
 		["Expense"] = "Expense",
-		["Net"] = "Net",
+		["Current money"] = "Current money",
 		["Session time"] = "Session time",
 		["Lowest"] = "Lowest",
 	}
