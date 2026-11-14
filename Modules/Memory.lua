@@ -1,5 +1,5 @@
-local addon, ns = ...
-local C, F, G, L = unpack(ns)
+local _, ns = ...
+local C, F, _, L = unpack(ns)
 
 if not C.Memory then return end
 

@@ -1,5 +1,5 @@
 local addon, ns = ...
-local C, F, G, L = unpack(ns)
+local C, F = unpack(ns)
 
 -- 게임 안 설정 창: ESC → 설정 → 애드온 → diminfo (또는 /diminfo)
 -- 값은 RegisterProxySetting으로 직접 읽고 쓴다(F.Setting / F.SetSetting, API.lua).

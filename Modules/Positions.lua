@@ -1,8 +1,8 @@
 -- C_Map.GetPlayerMapPosition의 메모리 사용 문제 (대신 UnitPosition으로 좌표 계산)
 -- https://www.wowinterface.com/forums/showthread.php?t=56290
 
-local addon, ns = ...
-local C, F, G, L = unpack(ns)
+local _, ns = ...
+local C, F = unpack(ns)
 
 if not C.Positions then return end
 

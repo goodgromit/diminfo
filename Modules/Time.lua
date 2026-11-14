@@ -1,5 +1,5 @@
-local addon, ns = ...
-local C, F, G, L = unpack(ns)
+local _, ns = ...
+local C, F = unpack(ns)
 
 if not C.Time then return end
 

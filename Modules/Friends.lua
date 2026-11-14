@@ -1,5 +1,5 @@
-local addon, ns = ...
-local C, F, G, L = unpack(ns)
+local _, ns = ...
+local C, F = unpack(ns)
 
 if not C.Friends then return end
 
@@ -24,17 +24,52 @@ local function ClassColor(classFile, levelColor)
 	return CLASS_COLORS[classFile] or levelColor
 end
 
--- 배틀넷 클라이언트 아이콘
-local clientTextures = {
-	WoW = "Interface\\FriendsFrame\\Battlenet-WoWicon",
-	S2 = "Interface\\FriendsFrame\\Battlenet-Sc2icon",
-	D3 = "Interface\\FriendsFrame\\Battlenet-D3icon",
-	WTCG = "Interface\\FriendsFrame\\Battlenet-WTCGicon",
-	Hero = "Interface\\FriendsFrame\\Battlenet-HotSicon",
-	Pro = "Interface\\FriendsFrame\\Battlenet-Overwatchicon",
-}
-local function ClientIcon(client)
-	return "|T"..(clientTextures[client] or "Interface\\FriendsFrame\\Battlenet-Battleneticon")..":16:16:2:0:50:50:4:46:4:46|t "
+-- 배틀넷 게임 아이콘
+-- Forever 친구 창(Blizzard_FriendsFrame)과 같이 C_Texture 타이틀 아이콘을 받아 온다. 게임 종류와 상관없이 동작한다.
+-- 아직 받아 오지 않은 아이콘은 한 번 요청해 두고 기본(배틀넷 앱) 아이콘을 쓰며, 받아 오면 툴팁을 다시 그린다.
+local DEFAULT_CLIENT_ICON = CreateAtlasMarkup("UI-ChatIcon-App", 16, 16, 2, 0).." "
+local requestedIcons = {}
+local function ClientIcon(client, subIcon)
+	if not client then return DEFAULT_CLIENT_ICON end
+	local version = Enum.TitleIconVersion.Small
+
+	if C_Texture.IsTitleIconTextureReady(client, version, subIcon) then
+		-- 준비된 아이콘은 콜백이 바로 불린다 (Forever 친구 창과 같은 사용법)
+		local icon
+		C_Texture.GetTitleIconTexture(client, version, function(success, texture)
+			if success then icon = texture end
+		end, subIcon)
+		if icon then return "|T"..icon..":16:16:2:0|t " end
+	else
+		local key = client..":"..(subIcon or "")
+		if not requestedIcons[key] then
+			requestedIcons[key] = true
+			C_Texture.GetTitleIconTexture(client, version, function(success)
+				if success and GameTooltip:IsOwned(Stat) then
+					Stat:GetScript("OnEnter")(Stat)
+				end
+			end, subIcon)
+		end
+	end
+	return DEFAULT_CLIENT_ICON
+end
+
+-- 배틀넷 앱, 모바일 앱처럼 게임이 아닌 클라이언트
+local APP_CLIENTS = { [BNET_CLIENT_APP] = true, [BNET_CLIENT_CLNT] = true, BSAp = true }
+
+-- 표시할 게임 계정. 친구가 앱과 게임에 동시에 접속해 있으면 앱이 아니라 실제로 플레이 중인 게임을 고른다.
+local function BestGameAccount(friendIndex, accountInfo)
+	local game = accountInfo.gameAccountInfo
+	if game and game.isOnline and not APP_CLIENTS[game.clientProgram] then
+		return game
+	end
+	for i = 1, C_BattleNet.GetFriendNumGameAccounts(friendIndex) or 0 do
+		local other = C_BattleNet.GetFriendGameAccountInfo(friendIndex, i)
+		if other and other.isOnline and not APP_CLIENTS[other.clientProgram] then
+			return other
+		end
+	end
+	return game
 end
 
 -- 내 캐릭터의 AFK, DND 상태
@@ -86,7 +121,7 @@ local function BuildBNTable(total)
 	wipe(BNTable)
 	for i = 1, total do
 		local accountInfo = C_BattleNet.GetFriendAccountInfo(i)
-		local game = accountInfo and accountInfo.gameAccountInfo
+		local game = accountInfo and BestGameAccount(i, accountInfo)
 		if game and game.isOnline then
 			local isWoW = game.clientProgram == BNET_CLIENT_WOW
 
@@ -108,10 +143,10 @@ local function BuildBNTable(total)
 			BNTable[#BNTable + 1] = {
 				accountName = accountInfo.accountName or "",
 				bnetAccountID = accountInfo.bnetAccountID,
-				battleTag = accountInfo.battleTag,
 				characterName = game.characterName,
 				gameAccountID = game.gameAccountID,
 				client = game.clientProgram,
+				subIcon = game.subIcon,
 				isWoW = isWoW,
 				status = status,
 				realmName = game.realmName,
@@ -271,7 +306,7 @@ Stat:SetScript("OnEnter", function(self)
 
 		local myRealm = GetRealmName()
 		for _, info in ipairs(BNTable) do
-			local icon = ClientIcon(info.client)
+			local icon = ClientIcon(info.client, info.subIcon)
 			if info.isWoW then
 				local levelc = GetQuestDifficultyColor(info.level)
 				local classc = ClassColor(info.classFile, levelc)
@@ -284,10 +319,15 @@ Stat:SetScript("OnEnter", function(self)
 					local realmc = (myRealm == info.realmName) and activezone or inactivezone
 					GameTooltip:AddDoubleLine(F.Hex(levelc)..info.level.."|r "..name, info.realmName, classc.r, classc.g, classc.b, realmc.r, realmc.g, realmc.b)
 				end
-			elseif info.characterName then
-				GameTooltip:AddDoubleLine(icon..info.characterName..info.status.." - "..(info.infoText or ""), info.battleTag, 1, 1, 1, 1, 1, 1)
 			else
-				GameTooltip:AddDoubleLine(icon..info.status, info.accountName, 1, 1, 1, 1, 1, 1)
+				-- 다른 게임: 캐릭터 이름(게임이 알려 주는 경우)과 게임 상태 문구(예: "액트 2 - 악몽")
+				local name = (info.characterName and info.characterName ~= "") and info.characterName or nil
+				local detail = (info.infoText and info.infoText ~= "") and info.infoText or nil
+				local text = name or ""
+				if detail then
+					text = text..(name and "|cffffffff - " or "|cffffffff")..detail.."|r"
+				end
+				GameTooltip:AddDoubleLine(icon..text..info.status, info.accountName, 1, 1, 1, 1, 1, 1)
 			end
 		end
 	end
